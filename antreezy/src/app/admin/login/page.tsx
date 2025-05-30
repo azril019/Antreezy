@@ -86,7 +86,7 @@ export default function AdminLogin() {
             <div className="space-y-2">
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-black"
               >
                 Email
               </label>
@@ -94,7 +94,7 @@ export default function AdminLogin() {
                 id="email"
                 type="email"
                 placeholder="admin@antreezy.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-300 text-black rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -105,7 +105,7 @@ export default function AdminLogin() {
             <div className="space-y-2">
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-black"
               >
                 Password
               </label>
@@ -113,8 +113,8 @@ export default function AdminLogin() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan password"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Masukan password"
+                  className="w-full px-3 py-2 border border-gray-300 text-black rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
