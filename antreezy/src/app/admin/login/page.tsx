@@ -31,13 +31,11 @@ export default function AdminLogin() {
         throw new Error(data.message || "Login failed");
       }
 
-      // Show success toast
       toast.success("Login berhasil, Mengalihkan ke dashboard...", {
         duration: 3000,
         position: "top-center",
       });
 
-      // Delay redirect to allow toast to be seen
       setTimeout(() => {
         window.location.href = "/admin";
       }, 1000);
