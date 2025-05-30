@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ChefHat,
@@ -15,6 +14,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { handleLogout } from "@/actions";
+import Image from "next/image";
 
 interface AdminSidebarProps {
   children: React.ReactNode;
@@ -52,30 +52,40 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const [notifications] = useState(3);
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
-  const router = useRouter();
+  const [user, setUser] = useState<{ username: string; role: string } | null>(
+    null
+  );
 
   useEffect(() => {
     setMounted(true);
-    // Simulasi user, ganti dengan logic auth Anda
-    const adminUser = localStorage.getItem("adminUser");
-    if (adminUser) {
-      setUser(JSON.parse(adminUser));
-    } else {
-      setUser({ name: "Admin User", role: "admin" });
-    }
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch("/api/profile");
+        if (!res.ok) throw new Error("Unauthorized");
+        const data = await res.json();
+        setUser({
+          username: data.user.username,
+          role: data.user.role,
+        });
+      } catch (err) {
+        window.location.href = "/admin/login";
+      }
+    };
+    fetchProfile();
   }, []);
 
-  const getInitials = (name: string) =>
-    name
+  const getInitials = (name?: string) => {
+    if (!name) return "AD";
+    return name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase();
+  };
 
   const filteredManagementItems = managementItems.filter((item) => {
     if (item.requiredRole) {
-      return user?.role === item.requiredRole || user?.role === "super_admin";
+      return user?.role === item.requiredRole || user?.role === "admin";
     }
     return true;
   });
@@ -86,13 +96,21 @@ export default function AdminSidebar({
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r flex flex-col">
-        <div className="flex items-center gap-3 px-6 py-4 border-b">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-500 text-white">
-            <ChefHat className="w-5 h-5" />
+        <div className="flex items-center gap-3 px-6 py-2 border-b">
+          <div className="flex items-center justify-center w-12 h-12 rounded-lg">
+            <Image
+              src="/logo.png"
+              alt="Antreezy Logo"
+              width={50}
+              height={50}
+              className="rounded-lg w-12 h-12"
+            />
           </div>
           <div>
-            <div className="font-bold text-lg leading-tight">Antri Boss</div>
-            <div className="text-xs text-gray-400">Admin Panel</div>
+            <div className="font-bold text-black text-lg leading-tight">
+              Antreezy
+            </div>
+            <div className="text-xs text-gray-500">Admin Panel</div>
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto">
@@ -118,9 +136,9 @@ export default function AdminSidebar({
           </ul>
           <div className="px-4 pt-6 pb-2 text-xs font-semibold text-gray-500 flex items-center gap-2">
             Manajemen
-            {user?.role === "super_admin" && (
+            {user?.role === "admin" && (
               <span className="ml-2 px-2 py-0.5 rounded bg-orange-100 text-orange-600 text-[10px] border border-orange-200">
-                Super Admin
+                Admin
               </span>
             )}
           </div>
@@ -150,19 +168,19 @@ export default function AdminSidebar({
         {/* Footer */}
         <div className="border-t px-6 py-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-orange-500 text-white flex items-center justify-center font-bold text-lg">
-            {user ? getInitials(user.name) : "AD"}
+            {user ? getInitials(user.username) : "AD"}
           </div>
           <div className="flex-1">
-            <div className="font-semibold text-sm truncate">
-              {user?.name || "Admin User"}
+            <div className="font-semibold text-black text-sm truncate">
+              {user?.username || "Admin User"}
             </div>
-            <div className="text-xs text-gray-400 truncate">
-              {user?.role === "super_admin" ? "Super Admin" : "Admin"}
+            <div className="text-xs text-gray-500 truncate">
+              {user?.role === "admin" ? "Admin" : "Staff"}
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="ml-2 p-2 rounded hover:bg-orange-100 text-gray-500 hover:text-orange-600 transition"
+            className="ml-2 p-2 rounded hover:bg-orange-100 text-gray-600 hover:text-orange-600 transition"
             title="Keluar"
           >
             <LogOut className="w-4 h-4" />
@@ -175,10 +193,12 @@ export default function AdminSidebar({
         <header className="flex h-16 items-center gap-2 border-b bg-white px-6">
           <div className="flex flex-1 items-center justify-between">
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+              <h1 className="text-lg text-black font-semibold">
+                Admin Dashboard
+              </h1>
               {user && (
                 <span className="ml-2 px-2 py-0.5 rounded bg-orange-100 text-orange-600 text-xs border border-orange-200">
-                  {user.role === "super_admin" ? "Super Admin" : "Admin"}
+                  {user?.role === "admin" ? "Admin" : "Staff"}
                 </span>
               )}
             </div>

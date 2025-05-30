@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertCircle, ChefHat, Eye, EyeOff, Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import Image from "next/image";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -58,8 +59,14 @@ export default function AdminLogin() {
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex items-center justify-center w-16 h-16 bg-orange-500 rounded-full">
-              <ChefHat className="w-8 h-8 text-white" />
+            <div className="flex items-center justify-center w-30 h-30">
+              <Image
+                src="/logo.png"
+                alt="Antreezy Logo"
+                width={100}
+                height={100}
+                className="w-30 h-30"
+              />
             </div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Antreezy Admin</h1>
@@ -86,7 +93,7 @@ export default function AdminLogin() {
             <div className="space-y-2">
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-black"
               >
                 Email
               </label>
@@ -94,7 +101,7 @@ export default function AdminLogin() {
                 id="email"
                 type="email"
                 placeholder="admin@antreezy.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-300 text-black rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -105,7 +112,7 @@ export default function AdminLogin() {
             <div className="space-y-2">
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-black"
               >
                 Password
               </label>
@@ -113,8 +120,8 @@ export default function AdminLogin() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan password"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Masukan password"
+                  className="w-full px-3 py-2 border border-gray-300 text-black rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

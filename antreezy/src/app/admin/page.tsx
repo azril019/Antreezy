@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
-  const [user, setUser] = useState<{ username: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; role: string } | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
-    // Example: fetch profile from API
     const fetchProfile = async () => {
       try {
         const res = await fetch("/api/profile");
@@ -20,13 +19,13 @@ export default function AdminDashboard() {
           role: data.user.role,
         });
       } catch (err) {
-        router.push("/admin/login");
+        window.location.href = "/admin/login";
       } finally {
         setLoading(false);
       }
     };
     fetchProfile();
-  }, [router]);
+  }, []);
 
   if (loading) {
     return (
@@ -54,7 +53,10 @@ export default function AdminDashboard() {
       </div>
       {/* Tambahkan komponen statistik dan daftar pesanan di sini */}
       <div className="mt-8 text-gray-500 text-center">
-        <p>Dashboard admin siap digunakan. Silakan tambahkan fitur sesuai kebutuhan.</p>
+        <p>
+          Dashboard admin siap digunakan. Silakan tambahkan fitur sesuai
+          kebutuhan.
+        </p>
       </div>
     </div>
   );
