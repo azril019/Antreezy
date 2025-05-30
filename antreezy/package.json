@@ -9,14 +9,20 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "daisyui": "^5.0.42",
+    "jose": "^6.0.11",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.16.0",
     "next": "15.3.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^3.25.41"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.8",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
