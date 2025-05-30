@@ -14,6 +14,7 @@ import {
   MapPin,
   UserPlus,
 } from "lucide-react";
+import { handleLogout } from "@/actions";
 
 interface AdminSidebarProps {
   children: React.ReactNode;
@@ -30,11 +31,25 @@ const navigationItems = [
 const managementItems = [
   { title: "Laporan", url: "/admin/reports", icon: BarChart3 },
   { title: "Pengaturan", url: "/admin/settings", icon: Settings },
-  { title: "Manajemen User", url: "/admin/users", icon: Users, requiredRole: "super_admin" },
-  { title: "Tambah User", url: "/admin/users/add", icon: UserPlus, badge: "New", requiredRole: "super_admin" },
+  {
+    title: "Manajemen User",
+    url: "/admin/users",
+    icon: Users,
+    requiredRole: "super_admin",
+  },
+  {
+    title: "Tambah User",
+    url: "/admin/users/add",
+    icon: UserPlus,
+    badge: "New",
+    requiredRole: "super_admin",
+  },
 ];
 
-export default function AdminSidebar({ children, currentPath = "/admin" }: AdminSidebarProps) {
+export default function AdminSidebar({
+  children,
+  currentPath = "/admin",
+}: AdminSidebarProps) {
   const [notifications] = useState(3);
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
@@ -50,11 +65,6 @@ export default function AdminSidebar({ children, currentPath = "/admin" }: Admin
       setUser({ name: "Admin User", role: "admin" });
     }
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("adminUser");
-    router.push("/admin/login");
-  };
 
   const getInitials = (name: string) =>
     name
@@ -86,7 +96,9 @@ export default function AdminSidebar({ children, currentPath = "/admin" }: Admin
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto">
-          <div className="px-4 pt-4 pb-2 text-xs font-semibold text-gray-500">Menu Utama</div>
+          <div className="px-4 pt-4 pb-2 text-xs font-semibold text-gray-500">
+            Menu Utama
+          </div>
           <ul>
             {navigationItems.map((item) => (
               <li key={item.title}>
@@ -141,7 +153,9 @@ export default function AdminSidebar({ children, currentPath = "/admin" }: Admin
             {user ? getInitials(user.name) : "AD"}
           </div>
           <div className="flex-1">
-            <div className="font-semibold text-sm truncate">{user?.name || "Admin User"}</div>
+            <div className="font-semibold text-sm truncate">
+              {user?.name || "Admin User"}
+            </div>
             <div className="text-xs text-gray-400 truncate">
               {user?.role === "super_admin" ? "Super Admin" : "Admin"}
             </div>
