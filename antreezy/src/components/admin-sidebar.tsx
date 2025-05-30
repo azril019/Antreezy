@@ -23,14 +23,29 @@ interface AdminSidebarProps {
 
 const navigationItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Manajemen Menu", url: "/admin/menu", icon: ChefHat },
-  { title: "Manajemen Meja", url: "/admin/tables", icon: MapPin },
+  {
+    title: "Manajemen Menu",
+    url: "/admin/menu",
+    icon: ChefHat,
+    restrictedFrom: ["staff"],
+  },
+  {
+    title: "Manajemen Meja",
+    url: "/admin/tables",
+    icon: MapPin,
+    restrictedFrom: ["staff"],
+  },
   { title: "Riwayat Transaksi", url: "/admin/history", icon: History },
 ];
 
 const managementItems = [
   { title: "Laporan", url: "/admin/reports", icon: BarChart3 },
-  { title: "Pengaturan", url: "/admin/settings", icon: Settings },
+  {
+    title: "Pengaturan",
+    url: "/admin/settings",
+    icon: Settings,
+    restrictedFrom: ["staff"],
+  },
   {
     title: "Manajemen User",
     url: "/admin/users",
@@ -83,10 +98,24 @@ export default function AdminSidebar({
       .toUpperCase();
   };
 
+  const filteredNavigationItems = navigationItems.filter((item) => {
+    if (item.restrictedFrom && user?.role) {
+      return !item.restrictedFrom.includes(user.role);
+    }
+    return true;
+  });
+
   const filteredManagementItems = managementItems.filter((item) => {
+    // Check for required role
     if (item.requiredRole) {
       return user?.role === item.requiredRole || user?.role === "admin";
     }
+
+    // Check for restricted roles
+    if (item.restrictedFrom && user?.role) {
+      return !item.restrictedFrom.includes(user.role);
+    }
+
     return true;
   });
 
@@ -118,7 +147,7 @@ export default function AdminSidebar({
             Menu Utama
           </div>
           <ul>
-            {navigationItems.map((item) => (
+            {filteredNavigationItems.map((item) => (
               <li key={item.title}>
                 <a
                   href={item.url}
