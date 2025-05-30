@@ -39,6 +39,9 @@ export default function AdminLogin() {
       setTimeout(() => {
         window.location.href = "/admin";
       }, 1000);
+      if (data.accessToken) {
+        localStorage.setItem("adminSession", data.accessToken);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to login. Please try again.");
     } finally {
