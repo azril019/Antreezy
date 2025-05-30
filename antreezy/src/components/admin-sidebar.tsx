@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ChefHat,
@@ -15,6 +14,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { handleLogout } from "@/actions";
+import Image from "next/image";
 
 interface AdminSidebarProps {
   children: React.ReactNode;
@@ -96,9 +96,15 @@ export default function AdminSidebar({
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r flex flex-col">
-        <div className="flex items-center gap-3 px-6 py-4 border-b">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-500 text-white">
-            <ChefHat className="w-5 h-5" />
+        <div className="flex items-center gap-3 px-6 py-2 border-b">
+          <div className="flex items-center justify-center w-12 h-12 rounded-lg">
+            <Image
+              src="/logo.png"
+              alt="Antreezy Logo"
+              width={50}
+              height={50}
+              className="rounded-lg w-12 h-12"
+            />
           </div>
           <div>
             <div className="font-bold text-black text-lg leading-tight">

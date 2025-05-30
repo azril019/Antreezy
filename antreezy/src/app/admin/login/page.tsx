@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertCircle, ChefHat, Eye, EyeOff, Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import Image from "next/image";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -58,8 +59,14 @@ export default function AdminLogin() {
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex items-center justify-center w-16 h-16 bg-orange-500 rounded-full">
-              <ChefHat className="w-8 h-8 text-white" />
+            <div className="flex items-center justify-center w-30 h-30">
+              <Image
+                src="/logo.png"
+                alt="Antreezy Logo"
+                width={100}
+                height={100}
+                className="w-30 h-30"
+              />
             </div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Antreezy Admin</h1>
