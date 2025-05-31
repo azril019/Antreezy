@@ -1,0 +1,117 @@
+import { db } from "@/db/config/mongodb";
+import { ObjectId, OptionalId } from "mongodb";
+import { NewTable, Table } from "@/app/types";
+
+export default class TableModel {
+  static collection() {
+    return db.collection<Omit<Table, "id"> & { _id?: ObjectId }>("tables");
+  }
+
+  static async getAllTables(): Promise<Table[]> {
+    const tables = await this.collection()
+      .find({ isActive: true })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return tables
+      .map(
+        (table): Table => ({
+          ...table,
+          id: table._id?.toString() || "",
+          _id: undefined,
+        })
+      )
+      .filter((table) => table.id);
+  }
+
+  static async createTable(newTable: NewTable): Promise<Table> {
+    const tableWithTimestamp = {
+      ...newTable,
+      status: "Tersedia" as const,
+      orderAktif: null,
+      qrCode: `QR-${newTable.nomor}-${Date.now()}`,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await this.collection().insertOne(tableWithTimestamp);
+
+    const createdTable = await this.collection().findOne({
+      _id: result.insertedId,
+    });
+
+    if (!createdTable) {
+      throw new Error("Failed to retrieve created table");
+    }
+
+    return {
+      ...createdTable,
+      id: createdTable._id?.toString() || "",
+      _id: undefined,
+    };
+  }
+  static async getTableByNumber(nomor: string): Promise<Table | null> {
+    const table = await this.collection().findOne({
+      nomor,
+      isActive: true,
+    });
+
+    if (!table) return null;
+
+    return {
+      ...table,
+      id: table._id?.toString() || "",
+      _id: undefined,
+    };
+  }
+
+  static async getTableById(id: string): Promise<Table | null> {
+    const table = await this.collection().findOne({
+      _id: new ObjectId(id),
+      isActive: true,
+    });
+
+    if (!table) return null;
+
+    return {
+      ...table,
+      id: table._id?.toString() || "",
+      _id: undefined,
+    };
+  }
+
+  static async updateTable(
+    id: string,
+    updatedData: NewTable
+  ): Promise<Table | null> {
+    const result = await this.collection().findOneAndUpdate(
+      { _id: new ObjectId(id), isActive: true },
+      {
+        $set: {
+          ...updatedData,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+      { returnDocument: "after" }
+    );
+
+    if (!result) return null;
+
+    return {
+      ...result,
+      id: result._id?.toString() || "",
+      _id: undefined,
+    };
+  }
+
+  static async deleteTable(id: string): Promise<boolean> {
+    const result = await this.collection().findOneAndUpdate(
+      { _id: new ObjectId(id), isActive: true },
+      { $set: { isActive: false, updatedAt: new Date().toISOString() } },
+      { returnDocument: "after" }
+    );
+
+    return !!result;
+  }
+}
