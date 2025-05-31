@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Validate file size (2MB limit)
     if (file.size > 2 * 1024 * 1024) {
       return NextResponse.json(
         { error: "File size exceeds 2MB limit" },
@@ -17,7 +16,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
@@ -26,12 +24,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create FormData for catbox
     const catboxFormData = new FormData();
     catboxFormData.append("fileToUpload", file);
     catboxFormData.append("reqtype", "fileupload");
 
-    // Upload directly to catbox.moe
     const response = await fetch("https://catbox.moe/user/api.php", {
       method: "POST",
       body: catboxFormData,
@@ -43,7 +39,6 @@ export async function POST(request: NextRequest) {
 
     const imageUrl = await response.text();
 
-    // Validate that we got a valid URL back
     if (!imageUrl || !imageUrl.includes("catbox.moe")) {
       throw new Error("Invalid response from catbox");
     }
