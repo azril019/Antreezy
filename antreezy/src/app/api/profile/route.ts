@@ -4,8 +4,6 @@ import UserModel from "@/db/models/UserModel";
 export async function GET(request: Request) {
   try {
     const userId = request.headers.get("x-user-id");
-    console.log("🚀 ~ GET ~ user:", userId);
-
     if (!userId) {
       throw { status: 400, message: "User ID header is missing" };
     }
