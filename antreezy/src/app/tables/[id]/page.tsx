@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Star,
   Users,
@@ -13,6 +13,7 @@ import {
   MessageCircle,
   TwitterIcon,
   ShoppingCart,
+  ArrowRight,
 } from "lucide-react";
 
 interface Restaurant {
@@ -48,14 +49,52 @@ interface Review {
   timeAgo: string;
 }
 
+interface MenuItem {
+  id: string;
+  name: string;
+  description: string;
+  composition?: string;
+  category: string;
+  price: number;
+  stock: number;
+  status: "tersedia" | "habis";
+  createdAt?: string;
+  updatedAt?: string;
+  nutritionalInfo?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    sugar: number;
+  };
+}
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 export default function TablePage() {
   const params = useParams();
+  const router = useRouter();
   const tableId = params.id as string;
-
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Load cart from localStorage on component mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem(`cart-${tableId}`);
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    }
+  }, [tableId]);
+
   // Function to fetch restaurant data by ID, with fallback to first restaurant
   const fetchRestaurantData = async () => {
     try {
@@ -112,10 +151,26 @@ export default function TablePage() {
     return Object.entries(categoryCounts).map(([name, count]) => ({
       name,
       icon: categoryIcons[name] || "🍴",
-      count: count as number,
+      count,
     }));
   };
+  // Handle category click - navigate to menu page
+  const handleCategoryClick = (categoryName: string) => {
+    if (categoryName === "Semua") {
+      router.push(`/tables/${tableId}/menu`);
+    } else {
+      router.push(`/tables/${tableId}/menu?category=${categoryName}`);
+    }
+  };
 
+  // Navigate to cart page
+  const handleCartClick = () => {
+    router.push(`/tables/${tableId}/cart`);
+  };
+  // Calculate total cart items
+  const getTotalCartItems = () => {
+    return cart.reduce((total, item) => total + item.quantity, 0);
+  };
   const menuCategories = getMenuCategories();
 
   // Calculate statistics from real data
@@ -213,45 +268,56 @@ export default function TablePage() {
       </div>
     );
   }
-
   return (
-    <div className="min-h-screen bg-orange-50">
-      {" "}
-      {/* Header - matching the exact design */}
-      <div className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-              {restaurant.logo ? (
-                <img
-                  src={restaurant.logo}
-                  alt={restaurant.name}
-                  className="w-8 h-8 object-cover rounded"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>';
-                  }}
-                />
-              ) : (
-                <div className="w-8 h-8 bg-gray-300 rounded"></div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100">
+      {/* Header - Sticky Navigation */}
+      <header className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-orange-100">
+        <div className="max-w-md mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center overflow-hidden shadow-md">
+                {restaurant.logo ? (
+                  <img
+                    src={restaurant.logo}
+                    alt={restaurant.name}
+                    className="w-8 h-8 object-cover rounded-lg"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>';
+                    }}
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-white/20 rounded-lg"></div>
+                )}
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-800">
+                  {restaurant.name}
+                </h1>
+                <p className="text-sm text-orange-600 font-medium">
+                  Meja #{tableId}
+                </p>
+              </div>
+            </div>
+            <div className="relative">
+              <button
+                onClick={handleCartClick}
+                className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors"
+              >
+                <ShoppingCart className="w-5 h-5 text-white" />
+              </button>
+              {getTotalCartItems() > 0 && (
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
+                  {getTotalCartItems()}
+                </div>
               )}
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-orange-600">
-                {restaurant.name}
-              </h1>
-              <p className="text-sm text-gray-500">Meja #{tableId}</p>
-            </div>
-          </div>{" "}
-          <div className="relative">
-            <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-              <ShoppingCart className="w-5 h-5 text-white" />
             </div>
           </div>
         </div>
-      </div>
-      <div className="max-w-md mx-auto px-4">
-        {" "}
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-md mx-auto px-4 pb-8">
         {/* Restaurant Info Section with cover image background */}
         <div className="py-6">
           <div className="rounded-2xl p-6 text-white relative overflow-hidden min-h-[200px]">
@@ -286,37 +352,66 @@ export default function TablePage() {
               </div>
             </div>
           </div>
-        </div>
+        </div>{" "}
         {/* Menu Categories */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-800 mb-4">
             Kategori Menu
           </h3>
-
           {menuCategories.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {menuCategories.map((category, index) => (
+            <div>
+              {/* "Semua" Category Card */}{" "}
+              <div className="mb-4">
                 <div
-                  key={index}
-                  className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:-translate-y-0.5"
+                  onClick={() => handleCategoryClick("Semua")}
+                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:-translate-y-0.5 border-2 border-transparent hover:border-orange-300"
                 >
-                  <div className="text-center">
-                    <div className="text-5xl mb-3">{category.icon}</div>
-                    <h4 className="font-semibold text-gray-800 mb-1 text-lg">
-                      {category.name}
-                    </h4>
-                    <p className="text-sm text-gray-500">
-                      {category.count} item
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="text-3xl mr-3">🍽️</div>
+                      <div>
+                        <h4 className="font-semibold text-gray-800 text-lg">
+                          Semua Menu
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          {
+                            menuItems.filter(
+                              (item) => item.status === "tersedia"
+                            ).length
+                          }{" "}
+                          item
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ))}
+              </div>
+              {/* Category Grid */}{" "}
+              <div className="grid grid-cols-2 gap-4">
+                {menuCategories.map((category, index) => (
+                  <div
+                    key={index}
+                    onClick={() => handleCategoryClick(category.name)}
+                    className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:-translate-y-0.5 border-2 border-transparent hover:border-orange-300"
+                  >
+                    <div className="text-center">
+                      <div className="text-5xl mb-3">{category.icon}</div>
+                      <h4 className="font-semibold text-gray-800 mb-1 text-lg">
+                        {category.name}
+                      </h4>
+                      <p className="text-sm text-gray-500">
+                        {category.count} item
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="bg-white rounded-xl p-6 shadow-sm text-center">
               <p className="text-gray-500">Belum ada menu tersedia</p>
             </div>
-          )}
+          )}{" "}
         </div>
         {/* Statistics Cards */}
         <div className="mb-6">
@@ -431,7 +526,7 @@ export default function TablePage() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
