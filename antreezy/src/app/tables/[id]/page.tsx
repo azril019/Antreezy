@@ -4,26 +4,15 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
   Star,
-  Clock,
   Users,
   MapPin,
   Phone,
-  Wifi,
-  Car,
-  Truck,
-  Calendar,
   Instagram,
   Facebook,
-  MessageSquare,
   Menu,
-  MessageSquareX,
   MessageCircle,
-  Twitter,
-  X,
-  Cross,
-  XIcon,
-  XCircleIcon,
   TwitterIcon,
+  ShoppingCart,
 } from "lucide-react";
 
 interface Restaurant {
@@ -33,6 +22,7 @@ interface Restaurant {
   logo: string;
   coverImage: string;
   description?: string;
+  tagline: string;
   contact?: {
     phone?: string;
     email?: string;
@@ -226,8 +216,9 @@ export default function TablePage() {
 
   return (
     <div className="min-h-screen bg-orange-50">
+      {" "}
       {/* Header - matching the exact design */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
+      <div className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
@@ -251,44 +242,51 @@ export default function TablePage() {
               </h1>
               <p className="text-sm text-gray-500">Meja #{tableId}</p>
             </div>
-          </div>
+          </div>{" "}
           <div className="relative">
             <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">3</span>
+              <ShoppingCart className="w-5 h-5 text-white" />
             </div>
           </div>
         </div>
       </div>
-
       <div className="max-w-md mx-auto px-4">
-        {/* Restaurant Info Section with gradient background */}
+        {" "}
+        {/* Restaurant Info Section with cover image background */}
         <div className="py-6">
-          <div className="bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 rounded-2xl p-6 text-white relative overflow-hidden">
-            {/* Background image placeholder */}
-            <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+          <div className="rounded-2xl p-6 text-white relative overflow-hidden min-h-[200px]">
+            {/* Background image */}
+            {restaurant.coverImage ? (
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${restaurant.coverImage})` }}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600" />
+            )}
+            <div className="relative z-10 flex flex-col justify-end h-full">
+              <div className="mt-20">
+                <h2 className="text-2xl font-bold mb-1">
+                  <span className="bg-white bg-opacity-20 text-orange-600 px-3 py-1 rounded-full">
+                    {restaurant.name}
+                  </span>
+                </h2>
+                <p className="text-white mb-4">{restaurant.tagline}</p>
 
-            <div className="relative z-10">
-              <h2 className="text-2xl font-bold mb-1">{restaurant.name}</h2>
-              <p className="text-gray-200 mb-4">Restoran Digital Terdepan</p>
-
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center space-x-1">
-                  <Clock className="w-4 h-4" />
-                  <span>Tutup</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span>{stats.rating}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <Users className="w-4 h-4" />
-                  <span>3 antrian</span>
+                <div className="flex items-center space-x-4 text-sm">
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span>{stats.rating}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Users className="w-4 h-4" />
+                    <span>3 antrian</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
         {/* Menu Categories */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-800 mb-4">
@@ -320,7 +318,6 @@ export default function TablePage() {
             </div>
           )}
         </div>
-
         {/* Statistics Cards */}
         <div className="mb-6">
           <div className="grid grid-cols-3 gap-4">
@@ -347,7 +344,6 @@ export default function TablePage() {
             </div>
           </div>
         </div>
-
         {/* Reviews Section */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-800 mb-4">
@@ -394,7 +390,6 @@ export default function TablePage() {
             ))}
           </div>
         </div>
-
         {/* About Restaurant */}
         <div className="mb-8">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Tentang Kami</h3>
