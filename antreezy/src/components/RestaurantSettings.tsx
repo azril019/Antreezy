@@ -47,6 +47,10 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
     }
   );
   const [tagline, setTagline] = useState(restaurant?.tagline || "");
+  const [isUploading, setIsUploading] = useState({
+    logo: false,
+    coverImage: false,
+  });
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,36 +73,104 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
   };
 
   const handleLogoUpload = () => {
-    logoInputRef.current?.click();
+    if (!isUploading.logo) {
+      logoInputRef.current?.click();
+    }
   };
 
   const handleCoverUpload = () => {
-    coverInputRef.current?.click();
+    if (!isUploading.coverImage) {
+      coverInputRef.current?.click();
+    }
   };
 
-  const handleFileChange = (
+  const uploadToCatbox = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Upload failed");
+    }
+
+    const data = await response.json();
+    return data.url;
+  };
+
+  const handleFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     type: "logo" | "coverImage"
   ) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // In a real app, you would upload to a server and get a URL back
-      // Here we're just creating a local URL for preview
-      const imageUrl = URL.createObjectURL(file);
-      setRestaurantData({
-        ...restaurantData,
-        [type]: imageUrl,
-      });
+    if (!file) return;
+
+    try {
+      // Set uploading state
+      setIsUploading((prev) => ({ ...prev, [type]: true }));
+
+      // Show preview immediately
+      const previewUrl = URL.createObjectURL(file);
+      setRestaurantData((prev) => ({
+        ...prev,
+        [type]: previewUrl,
+      }));
+
+      // Upload to catbox
+      const uploadedUrl = await uploadToCatbox(file);
+
+      // Update with uploaded URL
+      setRestaurantData((prev) => ({
+        ...prev,
+        [type]: uploadedUrl,
+      }));
+
+      // Clean up preview URL
+      URL.revokeObjectURL(previewUrl);
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image. Please try again.");
+
+      // Reset to previous state
+      setRestaurantData((prev) => ({
+        ...prev,
+        [type]: restaurant?.[type] || "",
+      }));
+    } finally {
+      setIsUploading((prev) => ({ ...prev, [type]: false }));
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(restaurantData);
+    // Update tagline in restaurant data before saving
+    const dataToSave = {
+      ...restaurantData,
+      tagline: tagline,
+    };
+    onSave(dataToSave);
   };
 
   return (
     <div className="container mx-auto p-4">
+      {/* Upload Loading Overlay */}
+      {(isUploading.logo || isUploading.coverImage) && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-md">
+            <div className="flex items-center space-x-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+              <p className="text-black">
+                Uploading {isUploading.logo ? "logo" : "cover image"}...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-black">
@@ -112,7 +184,8 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
         </div>
         <button
           onClick={handleSubmit}
-          className="px-4 py-2 bg-orange-500 text-black rounded-md flex items-center"
+          className="px-4 py-2 bg-orange-500 text-black rounded-md flex items-center hover:bg-orange-600 transition-colors"
+          disabled={isUploading.logo || isUploading.coverImage}
         >
           <Save className="mr-1 text-black h-5 w-5" />
           {isUpdate ? "Update Pengaturan" : "Simpan Pengaturan"}
@@ -149,9 +222,16 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
           <div className="mb-6">
             <label className="block mb-2 text-black">Logo Restaurant</label>
             <div
-              className="w-24 h-24 bg-gray-100 border flex items-center justify-center cursor-pointer"
+              className={`w-24 h-24 bg-gray-100 border flex items-center justify-center cursor-pointer relative overflow-hidden ${
+                isUploading.logo ? "opacity-50" : "hover:bg-gray-200"
+              }`}
               onClick={handleLogoUpload}
             >
+              {isUploading.logo && (
+                <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+                </div>
+              )}
               {restaurantData.logo ? (
                 <img
                   src={restaurantData.logo}
@@ -159,23 +239,31 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gray-200"></div>
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <Image className="text-gray-400 h-8 w-8" />
+                </div>
               )}
             </div>
             <input
               type="file"
               ref={logoInputRef}
               className="hidden"
-              accept="image/png,image/jpeg"
+              accept="image/png,image/jpeg,image/jpg"
               onChange={(e) => handleFileChange(e, "logo")}
+              disabled={isUploading.logo}
             />
             <button
               type="button"
-              className="mt-2 flex items-center text-black"
+              className={`mt-2 flex items-center text-black ${
+                isUploading.logo
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:text-orange-500"
+              }`}
               onClick={handleLogoUpload}
+              disabled={isUploading.logo}
             >
-              <Upload className="mr-1 text-black h-4 w-4" />
-              Upload Logo
+              <Upload className="mr-1 h-4 w-4" />
+              {isUploading.logo ? "Uploading..." : "Upload Logo"}
             </button>
             <p className="text-xs text-black mt-1">PNG, JPG hingga 2MB</p>
           </div>
@@ -183,9 +271,16 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
           <div className="mb-6">
             <label className="block mb-2 text-black">Cover Image</label>
             <div
-              className="w-full h-32 bg-gray-100 border flex items-center justify-center cursor-pointer"
+              className={`w-full h-32 bg-gray-100 border flex items-center justify-center cursor-pointer relative overflow-hidden ${
+                isUploading.coverImage ? "opacity-50" : "hover:bg-gray-200"
+              }`}
               onClick={handleCoverUpload}
             >
+              {isUploading.coverImage && (
+                <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                </div>
+              )}
               {restaurantData.coverImage ? (
                 <img
                   src={restaurantData.coverImage}
@@ -194,7 +289,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <Image className="text-black h-12 w-12" />
+                  <Image className="text-gray-400 h-12 w-12" />
                 </div>
               )}
             </div>
@@ -202,21 +297,22 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
               type="file"
               ref={coverInputRef}
               className="hidden"
-              accept="image/png,image/jpeg"
+              accept="image/png,image/jpeg,image/jpg"
               onChange={(e) => handleFileChange(e, "coverImage")}
+              disabled={isUploading.coverImage}
             />
           </div>
 
           <div className="mb-6">
             <label className="block mb-2 text-black">
-              Nama Restaurant <span className="text-black">*</span>
+              Nama Restaurant <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="name"
               value={restaurantData.name}
               onChange={handleInputChange}
-              className="w-full border p-2 rounded text-black"
+              className="w-full border p-2 rounded text-black focus:border-orange-500 focus:outline-none"
               placeholder="Contoh: Antri Boss"
               required
             />
@@ -228,7 +324,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
               type="text"
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
-              className="w-full border p-2 rounded text-black"
+              className="w-full border p-2 rounded text-black focus:border-orange-500 focus:outline-none"
               placeholder="Contoh: Restoran Digital Terdepan"
             />
           </div>
@@ -241,7 +337,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
               name="description"
               value={restaurantData.description || ""}
               onChange={handleInputChange}
-              className="w-full border p-2 rounded h-32 text-black"
+              className="w-full border p-2 rounded h-32 text-black focus:border-orange-500 focus:outline-none"
               placeholder="Nikmati pengalaman kuliner terbaik dengan sistem pemesanan digital yang mudah dan cepat. Kami menyajikan berbagai hidangan lezat dengan pelayanan terbaik."
             />
           </div>
@@ -252,7 +348,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
               name="address"
               value={restaurantData.address}
               onChange={handleInputChange}
-              className="w-full border p-2 rounded h-32 text-black"
+              className="w-full border p-2 rounded h-32 text-black focus:border-orange-500 focus:outline-none"
               placeholder="Jl. Merdeka No. 123, Jakarta Pusat"
               required
             />
@@ -286,7 +382,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                       },
                     });
                   }}
-                  className="w-full border p-2 pl-10 rounded text-black"
+                  className="w-full border p-2 pl-10 rounded text-black focus:border-orange-500 focus:outline-none"
                   placeholder="+62 21 1234 5678"
                 />
               </div>
@@ -311,7 +407,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                       },
                     });
                   }}
-                  className="w-full border p-2 pl-10 rounded text-black"
+                  className="w-full border p-2 pl-10 rounded text-black focus:border-orange-500 focus:outline-none"
                   placeholder="info@antriboss.com"
                 />
               </div>
@@ -336,7 +432,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                       },
                     });
                   }}
-                  className="w-full border p-2 pl-10 rounded text-black"
+                  className="w-full border p-2 pl-10 rounded text-black focus:border-orange-500 focus:outline-none"
                   placeholder="www.antriboss.com"
                 />
               </div>
@@ -367,7 +463,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                       },
                     });
                   }}
-                  className="w-full border p-2 pl-10 rounded text-black"
+                  className="w-full border p-2 pl-10 rounded text-black focus:border-orange-500 focus:outline-none"
                   placeholder="@antriboss"
                 />
               </div>
@@ -392,7 +488,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                       },
                     });
                   }}
-                  className="w-full border p-2 pl-10 rounded text-black"
+                  className="w-full border p-2 pl-10 rounded text-black focus:border-orange-500 focus:outline-none"
                   placeholder="Antri Boss Restaurant"
                 />
               </div>
@@ -417,7 +513,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                       },
                     });
                   }}
-                  className="w-full border p-2 pl-10 rounded text-black"
+                  className="w-full border p-2 pl-10 rounded text-black focus:border-orange-500 focus:outline-none"
                   placeholder="@antriboss"
                 />
               </div>
@@ -442,7 +538,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                       },
                     });
                   }}
-                  className="w-full border p-2 pl-10 rounded text-black"
+                  className="w-full border p-2 pl-10 rounded text-black focus:border-orange-500 focus:outline-none"
                   placeholder="+6281234567890"
                 />
               </div>
