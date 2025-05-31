@@ -153,23 +153,22 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
       tagline: tagline,
     };
     onSave(dataToSave);
-  };
-
-  return (
-    <div className="container mx-auto p-4">
-      {/* Upload Loading Overlay */}
+  };  return (
+    <>      {/* Upload Loading Overlay */}
       {(isUploading.logo || isUploading.coverImage) && (
-        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-md">
+        <div className="fixed top-0 left-0 w-full h-full backdrop-blur-md flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg border">
             <div className="flex items-center space-x-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
-              <p className="text-black">
+              <p className="text-black font-medium">
                 Uploading {isUploading.logo ? "logo" : "cover image"}...
               </p>
             </div>
           </div>
         </div>
       )}
+      
+      <div className="container mx-auto p-4">
 
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -251,13 +250,12 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
               accept="image/png,image/jpeg,image/jpg"
               onChange={(e) => handleFileChange(e, "logo")}
               disabled={isUploading.logo}
-            />
-            <button
+            />            <button
               type="button"
-              className={`mt-2 flex items-center text-black ${
+              className={`mt-2 flex items-center px-3 py-2 rounded-md transition-colors ${
                 isUploading.logo
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:text-orange-500"
+                  ? "opacity-50 cursor-not-allowed bg-gray-300 text-gray-500"
+                  : "bg-orange-500 text-white hover:bg-orange-600"
               }`}
               onClick={handleLogoUpload}
               disabled={isUploading.logo}
@@ -291,8 +289,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                   <Image className="text-gray-400 h-12 w-12" />
                 </div>
-              )}
-            </div>
+              )}            </div>
             <input
               type="file"
               ref={coverInputRef}
@@ -301,6 +298,19 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
               onChange={(e) => handleFileChange(e, "coverImage")}
               disabled={isUploading.coverImage}
             />
+            <button
+              type="button"
+              className={`mt-2 flex items-center px-3 py-2 rounded-md transition-colors ${
+                isUploading.coverImage
+                  ? "opacity-50 cursor-not-allowed bg-gray-300 text-gray-500"
+                  : "bg-orange-500 text-white hover:bg-orange-600"
+              }`}
+              onClick={handleCoverUpload}
+              disabled={isUploading.coverImage}
+            >
+              <Upload className="mr-1 h-4 w-4" />
+              {isUploading.coverImage ? "Uploading..." : "Upload Cover"}
+            </button>
           </div>
 
           <div className="mb-6">
@@ -542,11 +552,11 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
                   placeholder="+6281234567890"
                 />
               </div>
-            </div>
-          </div>
+            </div>          </div>
         </div>
       )}
     </div>
+    </>
   );
 };
 
