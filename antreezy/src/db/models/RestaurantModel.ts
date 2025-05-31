@@ -83,6 +83,35 @@ class RestaurantModel {
 
     return "Success update restaurant";
   }
+
+  static async getRestaurantById(restaurantId: string) {
+    const restaurant = await this.collection().findOne({
+      _id: new ObjectId(restaurantId),
+    });
+
+    if (!restaurant) {
+      throw { status: 404, message: "Restaurant not found" };
+    }
+
+    return {
+      id: restaurant._id.toString(),
+      name: restaurant.name,
+      address: restaurant.address,
+      tagline: restaurant.tagline || "",
+      logo: restaurant.logo || "",
+      coverImage: restaurant.coverImage || "",
+      description: restaurant.description || "",
+      contact: {
+        phone: restaurant.contact?.phone || "",
+        email: restaurant.contact?.email || "",
+        website: restaurant.contact?.website || "",
+        instagram: restaurant.contact?.instagram || "",
+        facebook: restaurant.contact?.facebook || "",
+        twitter: restaurant.contact?.twitter || "",
+        whatsapp: restaurant.contact?.whatsapp || "",
+      },
+    };
+  }
 }
 
 export default RestaurantModel;
