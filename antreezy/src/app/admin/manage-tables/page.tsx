@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Table } from "@/app/types";
 import TableFormModal from "@/components/TableFormModal";
+import QRCodeModal from "@/components/QRCodeModal";
 import toast, { Toaster } from "react-hot-toast";
 
 type TableStatus = "Tersedia" | "Terisi" | "Dipesan";
@@ -32,6 +33,12 @@ const TableManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTable, setCurrentTable] = useState<Table | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedTableForQR, setSelectedTableForQR] = useState<{
+    id: string;
+    nomor: string;
+    nama: string;
+  } | null>(null);
 
   // Fetch tables from database
   const fetchTables = async () => {
@@ -249,6 +256,15 @@ const TableManagement = () => {
         },
       }
     );
+  };
+
+  const handleGenerateQR = (table: Table) => {
+    setSelectedTableForQR({
+      id: table.id,
+      nomor: table.nomor,
+      nama: table.nama,
+    });
+    setQrModalOpen(true);
   };
 
   if (isLoading) {
@@ -530,9 +546,19 @@ const TableManagement = () => {
                       {table.orderAktif || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="flex items-center gap-1 text-blue-600 hover:text-blue-800">
+                      <button
+                        onClick={() => handleGenerateQR(table)}
+                        className={`flex items-center gap-1 hover:text-blue-800 transition-colors ${
+                          table.qrCodeData ? "text-green-600" : "text-blue-600"
+                        }`}
+                        title={
+                          table.qrCodeData
+                            ? "QR Code sudah ada"
+                            : "Generate QR Code"
+                        }
+                      >
                         <QrCode size={16} />
-                        Generate
+                        {table.qrCodeData ? "View QR" : "Generate"}
                       </button>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -571,6 +597,16 @@ const TableManagement = () => {
         table={currentTable}
         onSubmit={handleModalSubmit}
         isProcessing={isProcessing}
+      />
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={qrModalOpen}
+        onClose={() => {
+          setQrModalOpen(false);
+          setSelectedTableForQR(null);
+        }}
+        table={selectedTableForQR}
       />
     </div>
   );

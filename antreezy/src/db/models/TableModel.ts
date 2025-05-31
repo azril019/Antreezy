@@ -1,5 +1,5 @@
 import { db } from "@/db/config/mongodb";
-import { ObjectId, OptionalId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { NewTable, Table } from "@/app/types";
 
 export default class TableModel {
@@ -66,19 +66,57 @@ export default class TableModel {
     };
   }
 
-  static async getTableById(id: string): Promise<Table | null> {
-    const table = await this.collection().findOne({
-      _id: new ObjectId(id),
-      isActive: true,
-    });
+  static async updateTableQRCode(
+    id: string,
+    qrCodeData: {
+      qrCodeDataURL: string;
+      qrData: string;
+      qrCodeBase64: string;
+      generatedAt: string;
+    } | null
+  ): Promise<Table | null> {
+    const updateData: any = {
+      qrCode: `QR-${Date.now()}`,
+      updatedAt: new Date().toISOString(),
+    };
 
-    if (!table) return null;
+    if (qrCodeData !== null) {
+      updateData.qrCodeData = qrCodeData;
+    }
+
+    const result = await this.collection().findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: "after" }
+    );
+
+    if (!result) return null;
 
     return {
-      ...table,
-      id: table._id?.toString() || "",
+      ...result,
+      id: result._id?.toString() || "",
       _id: undefined,
     };
+  }
+
+  static async getTableById(id: string): Promise<Table | null> {
+    try {
+      const table = await this.collection().findOne({
+        _id: new ObjectId(id),
+        isActive: true,
+      });
+
+      if (!table) return null;
+
+      return {
+        ...table,
+        id: table._id?.toString() || "",
+        _id: undefined,
+      };
+    } catch (error) {
+      console.error("Error getting table by ID:", error);
+      return null;
+    }
   }
 
   static async updateTable(
