@@ -13,8 +13,10 @@ import {
   MessageCircle,
   TwitterIcon,
   ShoppingCart,
-  ArrowRight,
+  LucideGlobe,
+  AtSign,
 } from "lucide-react";
+import Link from "next/link";
 
 interface Restaurant {
   id: string;
@@ -499,6 +501,23 @@ export default function TablePage() {
                 <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-700">{restaurant.address}</span>
               </div>
+              {restaurant.contact?.website && (
+                <div className="flex items-center space-x-3">
+                  <LucideGlobe className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-700">
+                    {restaurant.contact.website}
+                  </span>
+                </div>
+              )}
+
+              {restaurant.contact?.email && (
+                <div className="flex items-center space-x-3">
+                  <AtSign className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-700">
+                    {restaurant.contact.email}
+                  </span>
+                </div>
+              )}
 
               {restaurant.contact?.phone && (
                 <div className="flex items-center space-x-3">
@@ -510,18 +529,54 @@ export default function TablePage() {
               )}
             </div>
 
+            {/* Social Media Links */}
             <div className="flex items-center space-x-4 pt-3 border-t border-gray-100">
               {restaurant.contact?.instagram && (
-                <Instagram className="w-6 h-6 text-pink-500 cursor-pointer hover:text-pink-600 transition-colors" />
+                <button
+                  onClick={() =>
+                    openSocialMedia("instagram", restaurant.contact?.instagram!)
+                  }
+                  className="p-2 rounded-full hover:bg-pink-50 transition-colors"
+                  title={`Follow us on Instagram: ${restaurant.contact.instagram}`}
+                >
+                  <Instagram className="w-6 h-6 text-pink-500 cursor-pointer hover:text-pink-600 transition-colors" />
+                </button>
               )}
+
               {restaurant.contact?.facebook && (
-                <Facebook className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-700 transition-colors" />
+                <button
+                  onClick={() =>
+                    openSocialMedia("facebook", restaurant.contact?.facebook!)
+                  }
+                  className="p-2 rounded-full hover:bg-blue-50 transition-colors"
+                  title={`Visit our Facebook: ${restaurant.contact.facebook}`}
+                >
+                  <Facebook className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-700 transition-colors" />
+                </button>
               )}
+
               {restaurant.contact?.whatsapp && (
-                <MessageCircle className="w-6 h-6 text-green-500 cursor-pointer hover:text-green-600 transition-colors" />
+                <button
+                  onClick={() =>
+                    openSocialMedia("whatsapp", restaurant.contact?.whatsapp!)
+                  }
+                  className="p-2 rounded-full hover:bg-green-50 transition-colors"
+                  title={`Chat us on WhatsApp: ${restaurant.contact.whatsapp}`}
+                >
+                  <MessageCircle className="w-6 h-6 text-green-500 cursor-pointer hover:text-green-600 transition-colors" />
+                </button>
               )}
-              {restaurant.contact?.whatsapp && (
-                <TwitterIcon className="w-6 h-6 text-black cursor-pointer hover:text-gray-600 transition-colors" />
+
+              {restaurant.contact?.twitter && (
+                <button
+                  onClick={() =>
+                    openSocialMedia("twitter", restaurant.contact?.twitter!)
+                  }
+                  className="p-2 rounded-full hover:bg-gray-50 transition-colors"
+                  title={`Follow us on Twitter: ${restaurant.contact.twitter}`}
+                >
+                  <TwitterIcon className="w-6 h-6 text-black cursor-pointer hover:text-gray-600 transition-colors" />
+                </button>
               )}
             </div>
           </div>
@@ -530,3 +585,36 @@ export default function TablePage() {
     </div>
   );
 }
+
+// Add helper functions for social media links
+const getSocialMediaLink = (platform: string, handle: string) => {
+  const baseUrls = {
+    instagram: "https://www.instagram.com/",
+    facebook: "https://www.facebook.com/",
+    twitter: "https://twitter.com/",
+    whatsapp: "https://wa.me/",
+  };
+
+  // Remove @ symbol if present
+  const cleanHandle = handle.replace("@", "");
+
+  switch (platform) {
+    case "instagram":
+      return `${baseUrls.instagram}${cleanHandle}`;
+    case "facebook":
+      return `${baseUrls.facebook}${cleanHandle}`;
+    case "twitter":
+      return `${baseUrls.twitter}${cleanHandle}`;
+    case "whatsapp":
+      // For WhatsApp, handle should be phone number
+      const phoneNumber = cleanHandle.replace(/\D/g, ""); // Remove non-digits
+      return `${baseUrls.whatsapp}${phoneNumber}`;
+    default:
+      return "#";
+  }
+};
+
+const openSocialMedia = (platform: string, handle: string) => {
+  const url = getSocialMediaLink(platform, handle);
+  window.open(url, "_blank", "noopener,noreferrer");
+};
