@@ -117,7 +117,7 @@ export default function AdminSidebar({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r flex flex-col">
+      <aside className="w-64 bg-white border-r flex flex-col h-screen sticky top-0">
         <div className="flex items-center gap-3 px-6 py-2 border-b">
           <div className="flex items-center justify-center w-12 h-12 rounded-lg">
             <Image
@@ -205,7 +205,7 @@ export default function AdminSidebar({
         </div>
       </aside>
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen overflow-auto">
         {/* Top Header */}
         <header className="flex h-16 items-center gap-2 border-b bg-white px-6">
           <div className="flex flex-1 items-center justify-between">
