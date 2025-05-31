@@ -36,7 +36,6 @@ export default function AdminLogin() {
         duration: 3000,
         position: "top-center",
       });
-
       setTimeout(() => {
         window.location.href = "/admin";
       }, 1000);

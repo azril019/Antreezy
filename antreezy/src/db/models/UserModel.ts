@@ -49,6 +49,44 @@ class UserModel {
     });
     return user;
   }
+
+  static async getAllUsers() {
+    const users = await this.collection().find().toArray();
+    return users.map((user) => ({
+      id: user._id.toString(),
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    }));
+  }
+
+  static async updateUser(id: string, updateData: Partial<NewUser>) {
+    if (!ObjectId.isValid(id)) {
+      throw { status: 400, message: "Invalid user ID" };
+    }
+    if (updateData.password) {
+      updateData.password = hashPassword(updateData.password);
+    }
+    const result = await this.collection().updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    if (result.modifiedCount === 0) {
+      throw { status: 404, message: "User not found or no changes made" };
+    }
+    return "User updated successfully";
+  }
+
+  static async deleteUser(id: string) {
+    if (!ObjectId.isValid(id)) {
+      throw { status: 400, message: "Invalid user ID" };
+    }
+    const result = await this.collection().deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
+      throw { status: 404, message: "User not found" };
+    }
+    return "User deleted successfully";
+  }
 }
 
 export default UserModel;
