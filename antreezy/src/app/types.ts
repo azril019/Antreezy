@@ -62,3 +62,43 @@ export interface MenuItemDB extends NewMenuItem {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface NewTable {
+  nomor: string;
+  nama: string;
+  kapasitas: number;
+  lokasi: string;
+}
+
+export interface Table extends NewTable {
+  id: string;
+  _id?: ObjectId | string;
+  status: "Tersedia" | "Terisi" | "Dipesan";
+  orderAktif: string | null;
+  qrCode: string;
+  qrCodeData?: {
+    qrCodeDataURL: string;
+    qrData: string;
+    qrCodeBase64: string;
+    generatedAt: string;
+  };
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TableDB extends NewTable {
+  _id?: ObjectId;
+  status: "Tersedia" | "Terisi" | "Dipesan";
+  orderAktif: string | null;
+  qrCode: string;
+  qrCodeData?: {
+    qrCodeDataURL: string;
+    qrData: string;
+    qrCodeBase64: string;
+    generatedAt: string;
+  };
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
