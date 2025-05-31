@@ -48,16 +48,9 @@ const managementItems = [
   },
   {
     title: "Manajemen User",
-    url: "/admin/users",
+    url: "/admin/manage-users",
     icon: Users,
-    requiredRole: "super_admin",
-  },
-  {
-    title: "Tambah User",
-    url: "/admin/users/add",
-    icon: UserPlus,
-    badge: "New",
-    requiredRole: "super_admin",
+    requiredRole: "admin",
   },
 ];
 
@@ -184,11 +177,6 @@ export default function AdminSidebar({
                 >
                   <item.icon className="w-4 h-4" />
                   {item.title}
-                  {item.badge && (
-                    <span className="ml-auto px-2 py-0.5 rounded bg-orange-100 text-orange-600 text-[10px] border border-orange-200">
-                      {item.badge}
-                    </span>
-                  )}
                 </a>
               </li>
             ))}

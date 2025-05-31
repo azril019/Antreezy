@@ -13,3 +13,12 @@ export async function POST(request: Request) {
     return errHandler(error);
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const users = await UserModel.getAllUsers();
+    return Response.json({ users });
+  } catch (error) {
+    return errHandler(error);
+  }
+}
