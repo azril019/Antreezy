@@ -45,6 +45,30 @@ export async function PUT(
   }
 }
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const tableId = (await params).id;
+
+  try {
+    const table = await TableModel.getTableById(tableId);
+    if (!table) throw { status: 404, message: "Table not found" };
+
+    return Response.json(
+      {
+        success: true,
+        message: "Table retrieved successfully",
+        data: table,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.log("🚀 ~ GET tables ~ error:", error);
+    return errHandler(error);
+  }
+}
+
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
