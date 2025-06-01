@@ -17,6 +17,7 @@ import {
   AtSign,
 } from "lucide-react";
 import Link from "next/link";
+import { NewTable } from "@/app/types";
 
 interface Restaurant {
   id: string;
@@ -84,6 +85,7 @@ export default function TablePage() {
   const router = useRouter();
   const tableId = params.id as string;
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [table, setTable] = useState<NewTable | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +132,26 @@ export default function TablePage() {
       setMenuItems(items);
     } catch (err) {
       console.error("Error fetching menu items:", err);
-      // Don't set error here as menu items are not critical
+    }
+  };
+
+  const fetchTableData = async () => {
+    try {
+      const response = await fetch(`/api/tables/${tableId}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch table: ${response.statusText}`);
+      }
+
+      const tableData = await response.json();
+      console.log("Fetched table data:", tableData);
+
+      setTable(tableData.data);
+      return tableData;
+    } catch (err) {
+      console.error("Error fetching table:", err);
+      setError("Failed to load table data");
+      return null;
     }
   };
 
@@ -211,10 +232,11 @@ export default function TablePage() {
       setError(null);
 
       try {
-        // Use the table ID as restaurant ID, or default to "1" for demo
-        const restaurantId = tableId || "1";
-
-        await Promise.all([fetchRestaurantData(), fetchMenuItems()]);
+        await Promise.all([
+          fetchTableData(),
+          fetchRestaurantData(),
+          fetchMenuItems(),
+        ]);
       } catch (err) {
         console.error("Error loading data:", err);
         setError("Failed to load data");
@@ -256,13 +278,11 @@ export default function TablePage() {
     );
   }
 
-  if (!restaurant) {
+  if (!restaurant || !table) {
     return (
       <div className="min-h-screen bg-orange-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Restaurant not found
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-800">Data not found</h2>
           <p className="text-gray-600 mt-2">
             Please check the table number and try again.
           </p>
@@ -297,7 +317,7 @@ export default function TablePage() {
                   {restaurant.name}
                 </h1>
                 <p className="text-sm text-orange-600 font-medium">
-                  Meja #{tableId}
+                  Meja #{table.nomor}
                 </p>
               </div>
             </div>

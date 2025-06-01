@@ -11,7 +11,6 @@ import {
   Bell,
   LogOut,
   MapPin,
-  UserPlus,
 } from "lucide-react";
 import { handleLogout } from "@/actions";
 import Image from "next/image";
@@ -31,7 +30,7 @@ const navigationItems = [
   },
   {
     title: "Manajemen Meja",
-    url: "/admin/tables",
+    url: "/admin/manage-tables",
     icon: MapPin,
     restrictedFrom: ["staff"],
   },

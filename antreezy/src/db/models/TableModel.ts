@@ -9,7 +9,7 @@ export default class TableModel {
 
   static async getAllTables(): Promise<Table[]> {
     const tables = await this.collection()
-      .find({ isActive: true })
+      .find()
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -29,8 +29,6 @@ export default class TableModel {
       ...newTable,
       status: "Tersedia" as const,
       orderAktif: null,
-      qrCode: `QR-${newTable.nomor}-${Date.now()}`,
-      isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -54,7 +52,6 @@ export default class TableModel {
   static async getTableByNumber(nomor: string): Promise<Table | null> {
     const table = await this.collection().findOne({
       nomor,
-      isActive: true,
     });
 
     if (!table) return null;
@@ -76,7 +73,6 @@ export default class TableModel {
     } | null
   ): Promise<Table | null> {
     const updateData: any = {
-      qrCode: `QR-${Date.now()}`,
       updatedAt: new Date().toISOString(),
     };
 
@@ -103,7 +99,6 @@ export default class TableModel {
     try {
       const table = await this.collection().findOne({
         _id: new ObjectId(id),
-        isActive: true,
       });
 
       if (!table) return null;
@@ -124,7 +119,7 @@ export default class TableModel {
     updatedData: NewTable
   ): Promise<Table | null> {
     const result = await this.collection().findOneAndUpdate(
-      { _id: new ObjectId(id), isActive: true },
+      { _id: new ObjectId(id) },
       {
         $set: {
           ...updatedData,
@@ -145,8 +140,8 @@ export default class TableModel {
 
   static async deleteTable(id: string): Promise<boolean> {
     const result = await this.collection().findOneAndUpdate(
-      { _id: new ObjectId(id), isActive: true },
-      { $set: { isActive: false, updatedAt: new Date().toISOString() } },
+      { _id: new ObjectId(id) },
+      { $set: { updatedAt: new Date().toISOString() } },
       { returnDocument: "after" }
     );
 
