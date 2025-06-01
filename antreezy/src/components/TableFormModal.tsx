@@ -10,7 +10,6 @@ interface Table {
   kapasitas: number;
   lokasi: string;
   status: "Tersedia" | "Terisi" | "Dipesan";
-  qrCode: string;
 }
 
 interface TableFormModalProps {
