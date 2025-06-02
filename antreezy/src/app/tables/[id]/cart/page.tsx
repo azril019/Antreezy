@@ -30,19 +30,24 @@ export default function CartPage() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // Load cart from API on component mount
+  const fetchCart = async () => {
+    try {
+      const response = await fetch(`/api/cart?tableId=${tableId}`);
+      if (response.ok) {
+        const cartData = await response.json();
+        setCart(cartData);
+      }
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    }
+  };
 
-  // Load cart from localStorage on component mount
   useEffect(() => {
-    const savedCart = localStorage.getItem(`cart-${tableId}`);
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
+    if (tableId) {
+      fetchCart();
     }
   }, [tableId]);
-
-  // Save cart to localStorage whenever cart changes
-  useEffect(() => {
-    localStorage.setItem(`cart-${tableId}`, JSON.stringify(cart));
-  }, [cart, tableId]);
 
   // Function to fetch restaurant data
   const fetchRestaurantData = async () => {
@@ -71,29 +76,82 @@ export default function CartPage() {
   const handleBackToTable = () => {
     router.push(`/tables/${tableId}`);
   };
-
   // Update quantity in cart
-  const updateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeFromCart(itemId);
-      return;
-    }
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "update",
+          itemId,
+          quantity: newQuantity,
+        }),
+      });
 
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      )
-    );
+      if (response.ok) {
+        const updatedCart = await response.json();
+        setCart(updatedCart);
+      } else {
+        console.error("Failed to update cart quantity");
+      }
+    } catch (error) {
+      console.error("Error updating cart quantity:", error);
+    }
   };
 
   // Remove item from cart
-  const removeFromCart = (itemId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== itemId));
+  const removeFromCart = async (itemId: string) => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "remove",
+          itemId,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedCart = await response.json();
+        setCart(updatedCart);
+      } else {
+        console.error("Failed to remove item from cart");
+      }
+    } catch (error) {
+      console.error("Error removing item from cart:", error);
+    }
   };
 
   // Clear entire cart
-  const clearCart = () => {
-    setCart([]);
+  const clearCart = async () => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "clear",
+        }),
+      });
+
+      if (response.ok) {
+        const updatedCart = await response.json();
+        setCart(updatedCart);
+      } else {
+        console.error("Failed to clear cart");
+      }
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+    }
   };
 
   // Calculate totals

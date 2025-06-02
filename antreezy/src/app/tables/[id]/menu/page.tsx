@@ -55,19 +55,24 @@ export default function MenuPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Load cart from API on component mount
+  const fetchCart = async () => {
+    try {
+      const response = await fetch(`/api/cart?tableId=${tableId}`);
+      if (response.ok) {
+        const cartData = await response.json();
+        setCart(cartData);
+      }
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    }
+  };
 
-  // Load cart from localStorage on component mount
   useEffect(() => {
-    const savedCart = localStorage.getItem(`cart-${tableId}`);
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
+    if (tableId) {
+      fetchCart();
     }
   }, [tableId]);
-
-  // Save cart to localStorage whenever cart changes
-  useEffect(() => {
-    localStorage.setItem(`cart-${tableId}`, JSON.stringify(cart));
-  }, [cart, tableId]);
 
   // Function to fetch restaurant data
   const fetchRestaurantData = async () => {
@@ -111,29 +116,34 @@ export default function MenuPage() {
       (item) => item.category === category && item.status === "tersedia"
     );
   };
-
   // Handle add to cart
-  const handleAddToCart = (menuItem: MenuItem) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === menuItem.id);
-      if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === menuItem.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        return [
-          ...prevCart,
-          {
+  const handleAddToCart = async (menuItem: MenuItem) => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "add",
+          item: {
             id: menuItem.id,
             name: menuItem.name,
             price: menuItem.price,
-            quantity: 1,
           },
-        ];
+        }),
+      });
+
+      if (response.ok) {
+        const updatedCart = await response.json();
+        setCart(updatedCart);
+      } else {
+        console.error("Failed to add item to cart");
       }
-    });
+    } catch (error) {
+      console.error("Error adding item to cart:", error);
+    }
   };
 
   // Calculate total cart items
@@ -282,7 +292,8 @@ export default function MenuPage() {
                     </h4>{" "}
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">
                       {item.description}
-                    </p>                    {/* Nutritional Information */}
+                    </p>{" "}
+                    {/* Nutritional Information */}
                     {item.nutritionalInfo && (
                       <div className="mb-3">
                         <h5 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">

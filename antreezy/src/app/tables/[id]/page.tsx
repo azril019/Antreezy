@@ -90,12 +90,22 @@ export default function TablePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
+  // Load cart from API on component mount
+  const fetchCart = async () => {
+    try {
+      const response = await fetch(`/api/cart?tableId=${tableId}`);
+      if (response.ok) {
+        const cartData = await response.json();
+        setCart(cartData);
+      }
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    }
+  };
 
-  // Load cart from localStorage on component mount
   useEffect(() => {
-    const savedCart = localStorage.getItem(`cart-${tableId}`);
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
+    if (tableId) {
+      fetchCart();
     }
   }, [tableId]);
 
