@@ -1,7 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-
-// In-memory storage for carts (in production, use database)
-const carts = new Map<string, any[]>();
+import { NextRequest } from "next/server";
+import CartModel from "@/db/models/CartModel";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,20 +7,14 @@ export async function GET(request: NextRequest) {
     const tableId = searchParams.get("tableId");
 
     if (!tableId) {
-      return NextResponse.json(
-        { error: "Table ID is required" },
-        { status: 400 }
-      );
+      return Response.json({ error: "Table ID is required" }, { status: 400 });
     }
 
-    const cart = carts.get(tableId) || [];
-    return NextResponse.json(cart);
+    const cart = await CartModel.getCartByTableId(tableId);
+    return Response.json(cart);
   } catch (error) {
     console.error("Error fetching cart:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch cart" },
-      { status: 500 }
-    );
+    return Response.json({ error: "Failed to fetch cart" }, { status: 500 });
   }
 }
 
@@ -32,84 +24,56 @@ export async function POST(request: NextRequest) {
     const { tableId, action, item, itemId, quantity } = body;
 
     if (!tableId) {
-      return NextResponse.json(
-        { error: "Table ID is required" },
-        { status: 400 }
-      );
+      return Response.json({ error: "Table ID is required" }, { status: 400 });
     }
 
-    let cart = carts.get(tableId) || [];
+    let updatedCart;
 
     switch (action) {
       case "add":
         if (!item) {
-          return NextResponse.json(
+          return Response.json(
             { error: "Item is required for add action" },
             { status: 400 }
           );
         }
 
-        const existingItemIndex = cart.findIndex(
-          (cartItem) => cartItem.id === item.id
-        );
-        if (existingItemIndex >= 0) {
-          cart[existingItemIndex].quantity += 1;
-        } else {
-          cart.push({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: 1,
-          });
-        }
+        updatedCart = await CartModel.addToCart(tableId, item);
         break;
 
       case "update":
         if (!itemId || quantity === undefined) {
-          return NextResponse.json(
+          return Response.json(
             { error: "Item ID and quantity are required for update action" },
             { status: 400 }
           );
         }
 
-        if (quantity <= 0) {
-          cart = cart.filter((cartItem) => cartItem.id !== itemId);
-        } else {
-          const itemIndex = cart.findIndex(
-            (cartItem) => cartItem.id === itemId
-          );
-          if (itemIndex >= 0) {
-            cart[itemIndex].quantity = quantity;
-          }
-        }
+        updatedCart = await CartModel.updateCartItem(tableId, itemId, quantity);
         break;
 
       case "remove":
         if (!itemId) {
-          return NextResponse.json(
+          return Response.json(
             { error: "Item ID is required for remove action" },
             { status: 400 }
           );
         }
 
-        cart = cart.filter((cartItem) => cartItem.id !== itemId);
+        updatedCart = await CartModel.removeCartItem(tableId, itemId);
         break;
 
       case "clear":
-        cart = [];
+        updatedCart = await CartModel.clearCart(tableId);
         break;
 
       default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+        return Response.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    carts.set(tableId, cart);
-    return NextResponse.json(cart);
+    return Response.json(updatedCart);
   } catch (error) {
     console.error("Error updating cart:", error);
-    return NextResponse.json(
-      { error: "Failed to update cart" },
-      { status: 500 }
-    );
+    return Response.json({ error: "Failed to update cart" }, { status: 500 });
   }
 }

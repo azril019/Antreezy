@@ -4,11 +4,19 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingCart } from "lucide-react";
 
+interface NutritionalInfo {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
+  nutritionalInfo?: NutritionalInfo;
 }
 
 interface Restaurant {
@@ -163,6 +171,36 @@ export default function CartPage() {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
+  // Calculate nutritional totals
+  const calculateTotalNutrition = () => {
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+
+    cart.forEach((item) => {
+      if (item.nutritionalInfo) {
+        const {
+          calories = 0,
+          protein = 0,
+          carbs = 0,
+          fat = 0,
+        } = item.nutritionalInfo;
+        totalCalories += calories * item.quantity;
+        totalProtein += protein * item.quantity;
+        totalCarbs += carbs * item.quantity;
+        totalFat += fat * item.quantity;
+      }
+    });
+
+    return {
+      calories: Math.round(totalCalories),
+      protein: Math.round(totalProtein * 10) / 10, // Round to 1 decimal
+      carbs: Math.round(totalCarbs * 10) / 10,
+      fat: Math.round(totalFat * 10) / 10,
+    };
+  };
+
   // Handle checkout
   const handleCheckout = () => {
     if (cart.length === 0) return;
@@ -182,6 +220,8 @@ export default function CartPage() {
       </div>
     );
   }
+
+  const nutritionInfo = calculateTotalNutrition();
 
   return (
     <div className="min-h-screen bg-orange-50">
@@ -327,7 +367,7 @@ export default function CartPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Pajak</span>
                   <span className="text-gray-800">
-                    Rp {Math.round(getTotalPrice() * 0.1).toLocaleString()}
+                    Rp {Math.round(getTotalPrice() * 0.11).toLocaleString()}
                   </span>
                 </div>
 
@@ -342,13 +382,46 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Checkout Button */}
-            <button
-              onClick={handleCheckout}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg transition-colors"
-            >
-              Lanjut ke Pembayaran
-            </button>
+            {/* Nutrition Info Card */}
+            <div className="mx-4 my-6 p-5 bg-white rounded-xl shadow-md">
+              <h2 className="text-lg font-semibold mb-4">
+                Total Informasi Gizi
+              </h2>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Calories */}
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-blue-600 text-xl font-bold">
+                    {nutritionInfo.calories}
+                  </p>
+                  <p className="text-gray-600">Kalori</p>
+                </div>
+
+                {/* Protein */}
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-green-600 text-xl font-bold">
+                    {nutritionInfo.protein}g
+                  </p>
+                  <p className="text-gray-600">Protein</p>
+                </div>
+
+                {/* Carbs */}
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <p className="text-yellow-600 text-xl font-bold">
+                    {nutritionInfo.carbs}g
+                  </p>
+                  <p className="text-gray-600">Karbohidrat</p>
+                </div>
+
+                {/* Fat */}
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <p className="text-red-500 text-xl font-bold">
+                    {nutritionInfo.fat}g
+                  </p>
+                  <p className="text-gray-600">Lemak</p>
+                </div>
+              </div>
+            </div>
           </>
         ) : (
           /* Empty Cart */
@@ -373,6 +446,13 @@ export default function CartPage() {
             </button>
           </div>
         )}
+        {/* Checkout Button */}
+        <button
+          onClick={handleCheckout}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg transition-colors"
+        >
+          Lanjut ke Pembayaran
+        </button>
       </div>
     </div>
   );
