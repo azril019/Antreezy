@@ -20,6 +20,8 @@ interface Cart {
   _id?: ObjectId;
   tableId: string;
   items: CartItem[];
+  isActive: boolean; // New field
+  status: string | null; // New field
   updatedAt: string;
   createdAt: string;
 }
@@ -59,6 +61,8 @@ export default class CartModel {
             },
           },
         ],
+        isActive: false, // Added at the cart level
+        status: null, // Added at the cart level
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
