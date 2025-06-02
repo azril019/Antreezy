@@ -175,7 +175,6 @@ export default function AdminDashboard() {
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Order ID</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Meja</th>
-              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Pelanggan</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Items</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
@@ -197,7 +196,6 @@ export default function AdminDashboard() {
                       #{order.table}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{order.customer}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 truncate max-w-xs">{order.items}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{order.total}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
