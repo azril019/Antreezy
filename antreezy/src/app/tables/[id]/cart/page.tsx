@@ -365,7 +365,7 @@ export default function CartPage() {
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Pajak</span>
+                  <span className="text-gray-600">Pajak(11%)</span>
                   <span className="text-gray-800">
                     Rp {Math.round(getTotalPrice() * 0.11).toLocaleString()}
                   </span>
