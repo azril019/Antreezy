@@ -99,7 +99,7 @@ export async function POST(
 
     // Generate QR code data
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const qrData = `${baseUrl}/tables/${table._id}`;
+    const qrData = `${baseUrl}/tables/${table.id}`;
 
     // Generate QR code as data URL
     const qrCodeDataURL = await QRCode.toDataURL(qrData, {

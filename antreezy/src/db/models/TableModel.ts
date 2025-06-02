@@ -139,11 +139,7 @@ export default class TableModel {
   }
 
   static async deleteTable(id: string): Promise<boolean> {
-    const result = await this.collection().findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: { updatedAt: new Date().toISOString() } },
-      { returnDocument: "after" }
-    );
+    const result = await this.collection().deleteOne({ _id: new ObjectId(id) });
 
     return !!result;
   }

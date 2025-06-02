@@ -408,25 +408,7 @@ const TableManagement = () => {
         {/* Table Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Daftar Meja</h2>
-            <div className="flex gap-2">
-              <button
-                className={`px-3 py-1 rounded ${
-                  viewMode === "Grid" ? "bg-gray-200" : "bg-gray-100"
-                }`}
-                onClick={() => setViewMode("Grid")}
-              >
-                Grid
-              </button>
-              <button
-                className={`px-3 py-1 rounded ${
-                  viewMode === "Table" ? "bg-gray-200" : "bg-gray-100"
-                }`}
-                onClick={() => setViewMode("Table")}
-              >
-                Table
-              </button>
-            </div>
+            <h2 className="text-xl text-black font-semibold">Daftar Meja</h2>
           </div>
 
           {/* Filters */}
@@ -439,13 +421,13 @@ const TableManagement = () => {
               <input
                 type="text"
                 placeholder="Cari meja..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className="w-full pl-10 text-black pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <select
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="px-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -455,7 +437,7 @@ const TableManagement = () => {
               <option>Dipesan</option>
             </select>
             <select
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="px-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
             >
