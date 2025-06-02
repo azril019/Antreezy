@@ -2,8 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Minus, Trash2, ShoppingCart } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Minus,
+  Trash2,
+  ShoppingCart,
+  CreditCard,
+} from "lucide-react";
 import { NewTable } from "@/app/types";
+import { createPayment, initiateMidtransPayment } from "@/helpers/payment";
 
 interface NutritionalInfo {
   calories: number;
@@ -40,6 +48,14 @@ export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [table, setTable] = useState<NewTable | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
+
   // Load cart from API on component mount
   const fetchCart = async () => {
     try {
@@ -222,13 +238,62 @@ export default function CartPage() {
     };
   };
 
-  // Handle checkout
+  // Handle checkout with Midtrans
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
+    // Show customer details form first
+    setShowCustomerForm(true);
+  };
+
+  const processPayment = async () => {
+    if (cart.length === 0) return;
+
+    setIsProcessingPayment(true);
+
     try {
+      // Calculate subtotal from cart items
+      const subtotal = cart.reduce((total, item) => {
+        return total + item.price * item.quantity;
+      }, 0);
+
+      // Calculate tax (11%)
+      const tax = Math.round(subtotal * 0.11);
+
+      // Total amount (subtotal + tax)
+      const totalAmount = subtotal + tax;
+
+      console.log("Payment calculation:", {
+        subtotal,
+        tax,
+        totalAmount,
+        cartItems: cart.length,
+      });
+
+      // Prepare payment data
+      const paymentData = {
+        tableId,
+        items: cart.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: Math.round(item.price), // Ensure integer
+          quantity: item.quantity,
+        })),
+        totalAmount,
+        customerDetails: {
+          name: customerDetails.name || `Table ${table?.nomor}`,
+          email: customerDetails.email,
+          phone: customerDetails.phone,
+        },
+      };
+
+      console.log("Sending payment data:", paymentData);
+
+      // Create payment token
+      const paymentResult = await createPayment(paymentData);
+
       // Update cart status to active and queue
-      const response = await fetch("/api/cart", {
+      const cartResponse = await fetch("/api/cart", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -241,16 +306,28 @@ export default function CartPage() {
         }),
       });
 
-      if (!response.ok) {
-        console.error("Failed to update cart status");
-        return;
+      if (!cartResponse.ok) {
+        throw new Error("Failed to update cart status");
       }
 
-      // Navigate to checkout page after successful status update
-      router.push(`/tables/${tableId}/checkout`);
+      // Initiate Midtrans payment
+      await initiateMidtransPayment(paymentResult.token);
+
+      // Payment success will be handled by Midtrans callbacks
+      // For now, navigate to success page
+      router.push(`/tables/${tableId}/payment/success`);
     } catch (error) {
-      console.error("Error during checkout process:", error);
+      console.error("Payment error:", error);
+      alert("Terjadi kesalahan dalam proses pembayaran. Silakan coba lagi.");
+    } finally {
+      setIsProcessingPayment(false);
+      setShowCustomerForm(false);
     }
+  };
+
+  const handleCustomerFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    processPayment();
   };
 
   if (loading) {
@@ -490,13 +567,94 @@ export default function CartPage() {
           </div>
         )}
         {/* Checkout Button */}
-        <button
-          onClick={handleCheckout}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg transition-colors"
-        >
-          Lanjut Pembayaran
-        </button>
+        {cart.length > 0 && (
+          <button
+            onClick={handleCheckout}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            disabled={isProcessingPayment}
+          >
+            <CreditCard className="w-5 h-5 mr-2" />
+            Lanjut Pembayaran
+          </button>
+        )}
       </div>
+
+      {/* Customer Details Modal */}
+      {showCustomerForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/95 backdrop-blur-md rounded-xl p-6 w-full max-w-md shadow-2xl border border-white/20">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Detail Pelanggan
+            </h3>
+
+            <form onSubmit={handleCustomerFormSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama
+                </label>
+                <input
+                  type="text"
+                  value={customerDetails.name}
+                  onChange={(e) =>
+                    setCustomerDetails((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
+                  className="w-full text-black p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/90 backdrop-blur-sm"
+                  placeholder="Masukkan nama Anda"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nomor HP (Opsional)
+                </label>
+                <input
+                  type="tel"
+                  value={customerDetails.phone}
+                  onChange={(e) =>
+                    setCustomerDetails((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
+                  className="w-full text-black p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/90 backdrop-blur-sm"
+                  placeholder="08123456789"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomerForm(false)}
+                  className="flex-1 px-4 py-3 text-gray-700 bg-gray-200/80 backdrop-blur-sm rounded-lg hover:bg-gray-300/80 transition-all duration-200"
+                  disabled={isProcessingPayment}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-3 bg-orange-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-orange-600/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  disabled={isProcessingPayment}
+                >
+                  {isProcessingPayment ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Memproses...
+                    </div>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Bayar Sekarang
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
