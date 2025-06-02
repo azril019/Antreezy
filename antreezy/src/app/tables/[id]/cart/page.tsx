@@ -4,11 +4,19 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingCart } from "lucide-react";
 
+interface NutritionalInfo {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
+  nutritionalInfo?: NutritionalInfo;
 }
 
 interface Restaurant {
@@ -30,19 +38,24 @@ export default function CartPage() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // Load cart from API on component mount
+  const fetchCart = async () => {
+    try {
+      const response = await fetch(`/api/cart?tableId=${tableId}`);
+      if (response.ok) {
+        const cartData = await response.json();
+        setCart(cartData);
+      }
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    }
+  };
 
-  // Load cart from localStorage on component mount
   useEffect(() => {
-    const savedCart = localStorage.getItem(`cart-${tableId}`);
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
+    if (tableId) {
+      fetchCart();
     }
   }, [tableId]);
-
-  // Save cart to localStorage whenever cart changes
-  useEffect(() => {
-    localStorage.setItem(`cart-${tableId}`, JSON.stringify(cart));
-  }, [cart, tableId]);
 
   // Function to fetch restaurant data
   const fetchRestaurantData = async () => {
@@ -71,29 +84,82 @@ export default function CartPage() {
   const handleBackToTable = () => {
     router.push(`/tables/${tableId}`);
   };
-
   // Update quantity in cart
-  const updateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeFromCart(itemId);
-      return;
-    }
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "update",
+          itemId,
+          quantity: newQuantity,
+        }),
+      });
 
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      )
-    );
+      if (response.ok) {
+        const updatedCart = await response.json();
+        setCart(updatedCart);
+      } else {
+        console.error("Failed to update cart quantity");
+      }
+    } catch (error) {
+      console.error("Error updating cart quantity:", error);
+    }
   };
 
   // Remove item from cart
-  const removeFromCart = (itemId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== itemId));
+  const removeFromCart = async (itemId: string) => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "remove",
+          itemId,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedCart = await response.json();
+        setCart(updatedCart);
+      } else {
+        console.error("Failed to remove item from cart");
+      }
+    } catch (error) {
+      console.error("Error removing item from cart:", error);
+    }
   };
 
   // Clear entire cart
-  const clearCart = () => {
-    setCart([]);
+  const clearCart = async () => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "clear",
+        }),
+      });
+
+      if (response.ok) {
+        const updatedCart = await response.json();
+        setCart(updatedCart);
+      } else {
+        console.error("Failed to clear cart");
+      }
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+    }
   };
 
   // Calculate totals
@@ -105,13 +171,65 @@ export default function CartPage() {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
+  // Calculate nutritional totals
+  const calculateTotalNutrition = () => {
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+
+    cart.forEach((item) => {
+      if (item.nutritionalInfo) {
+        const {
+          calories = 0,
+          protein = 0,
+          carbs = 0,
+          fat = 0,
+        } = item.nutritionalInfo;
+        totalCalories += calories * item.quantity;
+        totalProtein += protein * item.quantity;
+        totalCarbs += carbs * item.quantity;
+        totalFat += fat * item.quantity;
+      }
+    });
+
+    return {
+      calories: Math.round(totalCalories),
+      protein: Math.round(totalProtein * 10) / 10, // Round to 1 decimal
+      carbs: Math.round(totalCarbs * 10) / 10,
+      fat: Math.round(totalFat * 10) / 10,
+    };
+  };
+
   // Handle checkout
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    // Here you would typically integrate with a payment system
-    // For now, we'll just navigate to a confirmation page
-    router.push(`/tables/${tableId}/checkout`);
+    try {
+      // Update cart status to active and queue
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "updateStatus",
+          status: "queue",
+          isActive: true,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to update cart status");
+        return;
+      }
+
+      // Navigate to checkout page after successful status update
+      router.push(`/tables/${tableId}/checkout`);
+    } catch (error) {
+      console.error("Error during checkout process:", error);
+    }
   };
 
   if (loading) {
@@ -124,6 +242,8 @@ export default function CartPage() {
       </div>
     );
   }
+
+  const nutritionInfo = calculateTotalNutrition();
 
   return (
     <div className="min-h-screen bg-orange-50">
@@ -248,6 +368,47 @@ export default function CartPage() {
             </div>
 
             {/* Order Summary */}
+
+            {/* Nutrition Info Card */}
+            <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
+              <h2 className="text-lg text-black font-semibold mb-4">
+                Total Informasi Gizi
+              </h2>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Calories */}
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-blue-600 text-xl font-bold">
+                    {nutritionInfo.calories}
+                  </p>
+                  <p className="text-gray-600">Kalori</p>
+                </div>
+
+                {/* Protein */}
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-green-600 text-xl font-bold">
+                    {nutritionInfo.protein}g
+                  </p>
+                  <p className="text-gray-600">Protein</p>
+                </div>
+
+                {/* Carbs */}
+                <div className="bg-yellow-50 p-3 rounded-lg">
+                  <p className="text-yellow-600 text-xl font-bold">
+                    {nutritionInfo.carbs}g
+                  </p>
+                  <p className="text-gray-600">Karbohidrat</p>
+                </div>
+
+                {/* Fat */}
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <p className="text-red-500 text-xl font-bold">
+                    {nutritionInfo.fat}g
+                  </p>
+                  <p className="text-gray-600">Lemak</p>
+                </div>
+              </div>
+            </div>
             <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">
                 Ringkasan Pesanan
@@ -267,9 +428,9 @@ export default function CartPage() {
                 </div>
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Pajak</span>
+                  <span className="text-gray-600">Pajak(11%)</span>
                   <span className="text-gray-800">
-                    Rp {Math.round(getTotalPrice() * 0.1).toLocaleString()}
+                    Rp {Math.round(getTotalPrice() * 0.11).toLocaleString()}
                   </span>
                 </div>
 
@@ -283,14 +444,6 @@ export default function CartPage() {
                 </div>
               </div>
             </div>
-
-            {/* Checkout Button */}
-            <button
-              onClick={handleCheckout}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg transition-colors"
-            >
-              Lanjut ke Pembayaran
-            </button>
           </>
         ) : (
           /* Empty Cart */
@@ -315,6 +468,13 @@ export default function CartPage() {
             </button>
           </div>
         )}
+        {/* Checkout Button */}
+        <button
+          onClick={handleCheckout}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg transition-colors"
+        >
+          Lanjut Pembayaran
+        </button>
       </div>
     </div>
   );
