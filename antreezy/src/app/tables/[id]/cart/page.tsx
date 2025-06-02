@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Minus, Trash2, ShoppingCart } from "lucide-react";
+import { NewTable } from "@/app/types";
 
 interface NutritionalInfo {
   calories: number;
@@ -38,6 +39,7 @@ export default function CartPage() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [table, setTable] = useState<NewTable | null>(null);
   // Load cart from API on component mount
   const fetchCart = async () => {
     try {
@@ -51,9 +53,28 @@ export default function CartPage() {
     }
   };
 
+  const fetchTableData = async () => {
+    try {
+      const response = await fetch(`/api/tables/${tableId}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch table: ${response.statusText}`);
+      }
+
+      const tableData = await response.json();
+      console.log("Fetched table data:", tableData);
+
+      setTable(tableData.data);
+      return tableData;
+    } catch (err) {
+      console.error("Error fetching table:", err);
+    }
+  };
+
   useEffect(() => {
     if (tableId) {
       fetchCart();
+      fetchTableData();
     }
   }, [tableId]);
 
@@ -281,7 +302,7 @@ export default function CartPage() {
                 <h1 className="font-bold text-gray-800 text-lg leading-tight">
                   Keranjang
                 </h1>
-                <p className="text-sm text-gray-500">Meja #{tableId}</p>
+                <p className="text-sm text-gray-500">Meja #{table?.nomor}</p>
               </div>
             </div>
           </div>
