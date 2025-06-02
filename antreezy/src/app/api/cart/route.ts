@@ -67,6 +67,21 @@ export async function POST(request: NextRequest) {
         updatedCart = await CartModel.clearCart(tableId);
         break;
 
+      case "updateStatus":
+        if (body.status === undefined || body.isActive === undefined) {
+          return Response.json(
+            { error: "Status and isActive are required for updateStatus action" },
+            { status: 400 }
+          );
+        }
+
+        updatedCart = await CartModel.updateCartStatus(
+          tableId,
+          body.status,
+          body.isActive
+        );
+        break;
+
       default:
         return Response.json({ error: "Invalid action" }, { status: 400 });
     }

@@ -202,12 +202,34 @@ export default function CartPage() {
   };
 
   // Handle checkout
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    // Here you would typically integrate with a payment system
-    // For now, we'll just navigate to a confirmation page
-    router.push(`/tables/${tableId}/checkout`);
+    try {
+      // Update cart status to active and queue
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tableId,
+          action: "updateStatus",
+          status: "queue",
+          isActive: true,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to update cart status");
+        return;
+      }
+
+      // Navigate to checkout page after successful status update
+      router.push(`/tables/${tableId}/checkout`);
+    } catch (error) {
+      console.error("Error during checkout process:", error);
+    }
   };
 
   if (loading) {
@@ -346,45 +368,10 @@ export default function CartPage() {
             </div>
 
             {/* Order Summary */}
-            <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
-              <h3 className="font-semibold text-gray-800 mb-3">
-                Ringkasan Pesanan
-              </h3>
-
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Item</span>
-                  <span className="text-gray-800">{getTotalItems()} item</span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="text-gray-800">
-                    Rp {getTotalPrice().toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Pajak(11%)</span>
-                  <span className="text-gray-800">
-                    Rp {Math.round(getTotalPrice() * 0.11).toLocaleString()}
-                  </span>
-                </div>
-
-                <div className="border-t border-gray-200 pt-2 mt-3">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-800">Total</span>
-                    <span className="font-bold text-lg text-orange-600">
-                      Rp {Math.round(getTotalPrice() * 1.1).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Nutrition Info Card */}
-            <div className="mx-4 my-6 p-5 bg-white rounded-xl shadow-md">
-              <h2 className="text-lg font-semibold mb-4">
+            <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
+              <h2 className="text-lg text-black font-semibold mb-4">
                 Total Informasi Gizi
               </h2>
 
@@ -422,6 +409,41 @@ export default function CartPage() {
                 </div>
               </div>
             </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
+              <h3 className="font-semibold text-gray-800 mb-3">
+                Ringkasan Pesanan
+              </h3>
+
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Item</span>
+                  <span className="text-gray-800">{getTotalItems()} item</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-800">
+                    Rp {getTotalPrice().toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Pajak(11%)</span>
+                  <span className="text-gray-800">
+                    Rp {Math.round(getTotalPrice() * 0.11).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="border-t border-gray-200 pt-2 mt-3">
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-gray-800">Total</span>
+                    <span className="font-bold text-lg text-orange-600">
+                      Rp {Math.round(getTotalPrice() * 1.1).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </>
         ) : (
           /* Empty Cart */
@@ -451,7 +473,7 @@ export default function CartPage() {
           onClick={handleCheckout}
           className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg transition-colors"
         >
-          Lanjut ke Pembayaran
+          Lanjut Pembayaran
         </button>
       </div>
     </div>

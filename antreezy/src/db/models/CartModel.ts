@@ -180,4 +180,26 @@ export default class CartModel {
 
     return [];
   }
+
+  static async updateCartStatus(
+    tableId: string,
+    status: string,
+    isActive: boolean
+  ): Promise<CartItem[]> {
+    const result = await this.collection().updateOne(
+      { tableId },
+      {
+        $set: {
+          status,
+          isActive,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+      { upsert: true }
+    );
+
+    // Fetch and return updated cart
+    const cart = await this.collection().findOne({ tableId });
+    return cart ? cart.items : [];
+  }
 }
