@@ -111,7 +111,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Pesanan</p>
-                <p className="text-2xl font-bold text-gray-800">4</p>
+                <p className="text-2xl font-bold text-gray-800">{orders.length}</p>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Clock className="w-5 h-5 text-blue-600" />
@@ -126,7 +126,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm text-gray-600">Dalam Antrian</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  2
+                  {orders.filter(order => order.status === "queue").length}
                 </p>
               </div>
               <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm text-gray-600">Sedang Dimasak</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  1
+                  {orders.filter(order => order.status === "cooking").length}
                 </p>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm text-gray-600">Selesai</p>
                 <p className="text-2xl font-bold text-green-600">
-                  1
+                  {orders.filter(order => order.status === "served").length}
                 </p>
               </div>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
