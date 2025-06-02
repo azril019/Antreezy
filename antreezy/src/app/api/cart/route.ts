@@ -1,20 +1,25 @@
 import { NextRequest } from "next/server";
 import CartModel from "@/db/models/CartModel";
+import errHandler from "@/helpers/errHandler";
+
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const tableId = searchParams.get("tableId");
 
-    if (!tableId) {
-      return Response.json({ error: "Table ID is required" }, { status: 400 });
+    if (tableId) {
+      // Jika ada tableId, ambil cart untuk table tersebut
+      const cart = await CartModel.getCartByTableId(tableId);
+      return Response.json(cart);
+    } else {
+      // Jika tidak ada tableId, ambil semua cart aktif
+      const carts = await CartModel.getActiveCarts();
+      return Response.json({ data: carts });
     }
-
-    const cart = await CartModel.getCartByTableId(tableId);
-    return Response.json(cart);
   } catch (error) {
     console.error("Error fetching cart:", error);
-    return Response.json({ error: "Failed to fetch cart" }, { status: 500 });
+    return errHandler(error);
   }
 }
 
