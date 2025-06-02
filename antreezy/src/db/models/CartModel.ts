@@ -108,6 +108,13 @@ export default class CartModel {
     }
   }
 
+  static async getActiveCarts(): Promise<Cart[]> {
+    return await this.collection()
+      .find({ isActive: true })
+      .sort({ updatedAt: -1 })
+      .toArray();
+  }
+
   static async updateCartItem(
     tableId: string,
     itemId: string,
