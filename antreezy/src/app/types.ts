@@ -98,3 +98,4 @@ export interface TableDB extends NewTable {
   createdAt?: string;
   updatedAt?: string;
 }
+
