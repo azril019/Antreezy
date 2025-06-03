@@ -308,7 +308,7 @@ export default function TablePage() {
         <div className="max-w-md mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center overflow-hidden shadow-md">
+              <div className="w-12 h-12 bg-gray-300 rounded-xl flex items-center justify-center overflow-hidden shadow-md">
                 {restaurant.logo ? (
                   <img
                     src={restaurant.logo}

@@ -1,7 +1,7 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {useParams, useRouter} from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Plus,
@@ -10,8 +10,8 @@ import {
   ShoppingCart,
   CreditCard,
 } from "lucide-react";
-import {NewTable} from "@/app/types";
-import {createPayment, initiateMidtransPayment} from "@/helpers/payment";
+import { NewTable } from "@/app/types";
+import { createPayment, initiateMidtransPayment } from "@/helpers/payment";
 
 interface NutritionalInfo {
   calories: number;
@@ -338,7 +338,7 @@ export default function CartPage() {
     }
 
     // Clear any existing errors
-    setFormErrors({name: ""});
+    setFormErrors({ name: "" });
 
     // Continue with payment processing
     processPayment();
@@ -365,7 +365,8 @@ export default function CartPage() {
           <div className="flex items-center space-x-3">
             <button
               onClick={handleBackToTable}
-              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
+              className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+            >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
 
@@ -401,8 +402,10 @@ export default function CartPage() {
           {cart.length > 0 && (
             <button
               onClick={clearCart}
-              className="text-red-500 hover:text-red-700 text-sm font-medium">
-              Hapus Semua
+              className="flex items-center space-x-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 rounded-lg transition-all duration-200 border border-red-200 hover:border-red-300"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="text-sm font-medium">Hapus Semua</span>
             </button>
           )}
         </div>
@@ -416,7 +419,8 @@ export default function CartPage() {
               {cart.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white rounded-xl p-4 shadow-sm">
+                  className="bg-white rounded-xl p-4 shadow-sm"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-800 mb-1">
@@ -434,7 +438,8 @@ export default function CartPage() {
                           onClick={() =>
                             updateQuantity(item.id, item.quantity - 1)
                           }
-                          className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
+                          className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+                        >
                           <Minus className="w-4 h-4 text-gray-600" />
                         </button>
 
@@ -446,7 +451,8 @@ export default function CartPage() {
                           onClick={() =>
                             updateQuantity(item.id, item.quantity + 1)
                           }
-                          className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors">
+                          className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors"
+                        >
                           <Plus className="w-4 h-4 text-white" />
                         </button>
                       </div>
@@ -454,7 +460,8 @@ export default function CartPage() {
                       {/* Remove Button */}
                       <button
                         onClick={() => removeFromCart(item.id)}
-                        className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors">
+                        className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors"
+                      >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
                     </div>
@@ -568,7 +575,8 @@ export default function CartPage() {
 
             <button
               onClick={handleBackToTable}
-              className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
+              className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
+            >
               Mulai Pesan
             </button>
           </div>
@@ -578,7 +586,8 @@ export default function CartPage() {
           <button
             onClick={handleCheckout}
             className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            disabled={isProcessingPayment}>
+            disabled={isProcessingPayment}
+          >
             <CreditCard className="w-5 h-5 mr-2" />
             Lanjut Pembayaran
           </button>
@@ -608,7 +617,7 @@ export default function CartPage() {
                     }));
                     // Clear error when user types
                     if (e.target.value.trim()) {
-                      setFormErrors((prev) => ({...prev, name: ""}));
+                      setFormErrors((prev) => ({ ...prev, name: "" }));
                     }
                   }}
                   className={`w-full text-black p-3 border ${
@@ -646,16 +655,18 @@ export default function CartPage() {
                   type="button"
                   onClick={() => {
                     setShowCustomerForm(false);
-                    setFormErrors({name: ""}); // Clear errors when closing
+                    setFormErrors({ name: "" }); // Clear errors when closing
                   }}
                   className="flex-1 px-4 py-3 text-gray-700 bg-gray-200/80 backdrop-blur-sm rounded-lg hover:bg-gray-300/80 transition-all duration-200"
-                  disabled={isProcessingPayment}>
+                  disabled={isProcessingPayment}
+                >
                   Batal
                 </button>
                 <button
                   type="submit"
                   className="flex-1 px-4 py-3 bg-orange-500/90 backdrop-blur-sm text-white rounded-lg hover:bg-orange-600/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                  disabled={isProcessingPayment}>
+                  disabled={isProcessingPayment}
+                >
                   {isProcessingPayment ? (
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

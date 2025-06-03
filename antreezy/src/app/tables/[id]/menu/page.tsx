@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, ShoppingCart, Star } from "lucide-react";
+import { NewTable } from "@/app/types";
 
 interface MenuItem {
   id: string;
@@ -54,6 +55,7 @@ export default function MenuPage() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [table, setTable] = useState<NewTable | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Load cart from API on component mount
@@ -69,9 +71,30 @@ export default function MenuPage() {
     }
   };
 
+  const fetchTableData = async () => {
+    try {
+      const response = await fetch(`/api/tables/${tableId}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch table: ${response.statusText}`);
+      }
+
+      const tableData = await response.json();
+      console.log("Fetched table data:", tableData);
+
+      setTable(tableData.data);
+      return tableData;
+    } catch (err) {
+      console.error("Error fetching table:", err);
+      setError("Failed to load table data");
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (tableId) {
       fetchCart();
+      fetchTableData();
     }
   }, [tableId]);
 
@@ -248,7 +271,7 @@ export default function MenuPage() {
                 <h1 className="font-bold text-gray-800 text-lg leading-tight">
                   {restaurant?.name || "Restaurant"}
                 </h1>
-                <p className="text-sm text-gray-500">Meja #{tableId}</p>
+                <p className="text-sm text-gray-500">Meja #{table?.nomor}</p>
               </div>
             </div>
           </div>
@@ -387,7 +410,7 @@ export default function MenuPage() {
             >
               <div className="flex items-center space-x-3">
                 <div className="bg-white bg-opacity-20 rounded-full p-2">
-                  <ShoppingCart className="w-5 h-5" />
+                  <ShoppingCart className="text-orange-500 w-5 h-5" />
                 </div>
                 <div className="text-left">
                   <p className="font-semibold">
