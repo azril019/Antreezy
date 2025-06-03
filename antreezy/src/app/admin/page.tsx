@@ -173,7 +173,7 @@ export default function AdminDashboard() {
 
               return (
                 <tr key={order._id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{order._id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{`ORD-${order._id?.toString().slice(-3)}`}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm text-gray-800">
                       #{tableNumber}
@@ -201,7 +201,52 @@ export default function AdminDashboard() {
                     {order.updatedAt ? new Date(order.updatedAt).toLocaleTimeString() : "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {/* Tambahkan aksi jika perlu */}
+                    {order.status === "queue" && (
+                      <button
+                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                        onClick={async () => {
+                          await fetch("/api/cart", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              tableId: order.tableId,
+                              action: "updateStatus",
+                              status: "cooking",
+                              isActive: true,
+                            }),
+                          });
+                          // Refresh orders
+                          const res = await fetch("/api/cart");
+                          const data = await res.json();
+                          setOrders(data.data || []);
+                        }}
+                      >
+                        Cook
+                      </button>
+                    )}
+                    {order.status === "cooking" && (
+                      <button
+                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                        onClick={async () => {
+                          await fetch("/api/cart", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              tableId: order.tableId,
+                              action: "updateStatus",
+                              status: "served",
+                              isActive: true,
+                            }),
+                          });
+                          // Refresh orders
+                          const res = await fetch("/api/cart");
+                          const data = await res.json();
+                          setOrders(data.data || []);
+                        }}
+                      >
+                        Serve
+                      </button>
+                    )}
                   </td>
                 </tr>
               );
