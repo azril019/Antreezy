@@ -13,6 +13,7 @@ interface MenuItem {
   price: number;
   stock: number;
   status: "tersedia" | "habis";
+  image?: string; // Added image field
   createdAt?: string;
   updatedAt?: string;
   nutritionalInfo?: {
@@ -280,19 +281,30 @@ export default function MenuPage() {
         {/* Menu Items List */}
         {filteredMenuItems.length > 0 ? (
           <div className="space-y-4">
+            {" "}
             {filteredMenuItems.map((item) => (
               <div
                 key={item.id}
                 className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 pr-4">
+                <div className="flex items-start justify-between gap-4">
+                  {/* Image */}
+                  {item.image && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-20 h-20 rounded-lg object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
                     <h4 className="font-semibold text-gray-800 text-lg mb-1">
                       {item.name}
-                    </h4>{" "}
+                    </h4>
                     <p className="text-gray-600 text-sm mb-2 line-clamp-2">
                       {item.description}
-                    </p>{" "}
+                    </p>
                     {/* Nutritional Information */}
                     {item.nutritionalInfo && (
                       <div className="mb-3">
@@ -320,7 +332,7 @@ export default function MenuPage() {
                           </div>
                         </div>
                       </div>
-                    )}
+                    )}{" "}
                     <div className="flex items-center justify-between">
                       <span className="text-xl font-bold text-orange-600">
                         Rp {item.price.toLocaleString()}

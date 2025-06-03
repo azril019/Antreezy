@@ -12,6 +12,7 @@ interface MenuItem {
   price: number;
   stock: number;
   status: "tersedia" | "habis";
+  image?: string; // Added image field
   nutritionalInfo?: {
     calories: number;
     protein: number;
@@ -45,10 +46,13 @@ export default function MenuFormModal({
     price: 0,
     stock: 0,
     status: "tersedia" as "tersedia" | "habis",
+    image: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   // Populate form when editing
   useEffect(() => {
     if (menuItem) {
@@ -60,7 +64,9 @@ export default function MenuFormModal({
         price: menuItem.price,
         stock: menuItem.stock,
         status: menuItem.status,
+        image: menuItem.image || "",
       });
+      setImagePreview(menuItem.image || "");
     } else {
       // Reset form for new item
       setFormData({
@@ -71,11 +77,13 @@ export default function MenuFormModal({
         price: 0,
         stock: 0,
         status: "tersedia",
+        image: "",
       });
+      setImagePreview("");
+      setSelectedFile(null);
     }
     setErrors({});
   }, [menuItem, isOpen]);
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -99,11 +107,79 @@ export default function MenuFormModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        setErrors((prev) => ({ ...prev, image: "File harus berupa gambar" }));
+        return;
+      }
+      // Validate file size (2MB max)
+      if (file.size > 2 * 1024 * 1024) {
+        setErrors((prev) => ({ ...prev, image: "Ukuran file maksimal 2MB" }));
+        return;
+      }
+
+      setSelectedFile(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Clear any previous errors
+      setErrors((prev) => ({ ...prev, image: "" }));
+    }
+  };
+
+  const handleImageUpload = async () => {
+    if (!selectedFile) return null;
+
+    setIsUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const data = await response.json();
+      return data.url;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      setErrors((prev) => ({ ...prev, image: "Gagal mengupload gambar" }));
+      return null;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
+    }
+
+    let imageUrl = formData.image;
+
+    // Upload new image if selected
+    if (selectedFile) {
+      const uploadedUrl = await handleImageUpload();
+      if (uploadedUrl) {
+        imageUrl = uploadedUrl;
+      } else {
+        return; // Stop submission if image upload failed
+      }
     }
 
     // Auto set status based on stock
@@ -112,6 +188,7 @@ export default function MenuFormModal({
       status: formData.stock > 0 ? "tersedia" : "habis",
       // Only include composition if it's not empty
       composition: formData.composition.trim() || undefined,
+      image: imageUrl,
     };
 
     onSubmit(finalData);
@@ -198,11 +275,60 @@ export default function MenuFormModal({
                 placeholder="Masukkan deskripsi menu"
                 disabled={isProcessing}
                 required
-              />
+              />{" "}
               {errors.description && (
                 <p className="text-red-500 text-xs mt-1">
                   {errors.description}
                 </p>
+              )}
+            </div>
+
+            {/* Image Upload */}
+            <div>
+              <label
+                htmlFor="image"
+                className="block text-sm font-medium text-black mb-1"
+              >
+                Gambar Menu
+                <span className="text-gray-400 text-xs ml-1">(Opsional)</span>
+              </label>
+
+              {/* Image Preview */}
+              {imagePreview && (
+                <div className="mb-3">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-32 object-cover rounded-md border"
+                  />
+                </div>
+              )}
+
+              {/* File Input */}
+              <input
+                type="file"
+                id="image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full p-2 border border-gray-300 rounded-md text-black focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                disabled={isProcessing || isUploadingImage}
+              />
+
+              {errors.image && (
+                <p className="text-red-500 text-xs mt-1">{errors.image}</p>
+              )}
+
+              <p className="text-xs text-gray-500 mt-1">
+                Format: JPG, PNG, WEBP. Maksimal 5MB
+              </p>
+
+              {isUploadingImage && (
+                <div className="flex items-center mt-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500 mr-2"></div>
+                  <span className="text-sm text-gray-600">
+                    Mengupload gambar...
+                  </span>
+                </div>
               )}
             </div>
 
@@ -344,23 +470,28 @@ export default function MenuFormModal({
 
             {/* Buttons */}
             <div className="flex space-x-3 pt-4">
+              {" "}
               <button
                 type="button"
                 onClick={onClose}
                 className="flex-1 px-4 py-2 text-black bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
-                disabled={isProcessing}
+                disabled={isProcessing || isUploadingImage}
               >
                 Batal
               </button>
               <button
                 type="submit"
                 className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isProcessing}
+                disabled={isProcessing || isUploadingImage}
               >
-                {isProcessing ? (
+                {isProcessing || isUploadingImage ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {menuItem ? "Mengupdate..." : "Menambahkan..."}
+                    {isUploadingImage
+                      ? "Mengupload gambar..."
+                      : menuItem
+                      ? "Mengupdate..."
+                      : "Menambahkan..."}
                   </div>
                 ) : menuItem ? (
                   "Update Menu"

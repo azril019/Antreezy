@@ -61,6 +61,7 @@ interface MenuItem {
   price: number;
   stock: number;
   status: "tersedia" | "habis";
+  image?: string; // Added image field
   createdAt?: string;
   updatedAt?: string;
   nutritionalInfo?: {
