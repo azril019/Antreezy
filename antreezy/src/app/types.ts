@@ -39,6 +39,7 @@ export interface NewMenuItem {
   price: number;
   stock: number;
   status: "tersedia" | "habis";
+  image?: string; // Added image field for menu item images
   nutritionalInfo?: {
     calories: number;
     protein: number;
@@ -98,4 +99,3 @@ export interface TableDB extends NewTable {
   createdAt?: string;
   updatedAt?: string;
 }
-

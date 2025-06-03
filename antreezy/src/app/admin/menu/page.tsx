@@ -13,6 +13,7 @@ interface MenuItem {
   price: number;
   stock: number;
   status: "tersedia" | "habis";
+  image?: string; // New field for image URL
   createdAt?: string;
   updatedAt?: string;
   nutritionalInfo?: {
@@ -519,18 +520,27 @@ export default function MenuManagementPage() {
                   key={menuItem.id}
                   className={index === 0 ? "bg-orange-50" : ""}
                 >
+                  {" "}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
-                        <div
-                          className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                            index === 0
-                              ? "bg-orange-200 text-orange-900"
-                              : "bg-orange-100 text-orange-800"
-                          }`}
-                        >
-                          {menuItem.name.charAt(0).toUpperCase()}
-                        </div>
+                        {menuItem.image ? (
+                          <img
+                            src={menuItem.image}
+                            alt={menuItem.name}
+                            className="h-10 w-10 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div
+                            className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                              index === 0
+                                ? "bg-orange-200 text-orange-900"
+                                : "bg-orange-100 text-orange-800"
+                            }`}
+                          >
+                            {menuItem.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
                       <div className="ml-4">
                         <div
