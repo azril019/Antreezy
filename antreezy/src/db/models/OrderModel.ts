@@ -1,7 +1,4 @@
-import { Db, MongoClient, WithId, Document } from "mongodb";
-
-const uri = process.env.MONGODB_URI || "";
-const client = new MongoClient(uri);
+import { db } from "../config/mongodb";
 
 export interface Order {
   _id?: string;
@@ -16,7 +13,7 @@ export interface Order {
   totalAmount: number;
   status: "pending" | "paid" | "failed" | "cancelled";
   paymentMethod?: string;
-  transactionId?: string;
+  midtrans: { token: string; redirect_url: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,7 +21,6 @@ export interface Order {
 export default class OrderModel {
   static collection() {
     // cSpell:ignore antreezy
-    const db: Db = client.db("antreezy");
     return db.collection<Order>("orders");
   }
 

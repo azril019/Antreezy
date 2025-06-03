@@ -1,8 +1,9 @@
+import OrderModel from "@/db/models/OrderModel";
 import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   console.log("Payment API called");
-  
+
   try {
     // Check environment variables
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
@@ -20,9 +21,9 @@ export async function POST(request: NextRequest) {
     if (!serverKey || !clientKey) {
       console.error("Midtrans keys not configured");
       return Response.json(
-        { 
+        {
           error: "Payment service not configured",
-          details: "Midtrans API keys are missing"
+          details: "Midtrans API keys are missing",
         },
         { status: 500 }
       );
@@ -30,23 +31,23 @@ export async function POST(request: NextRequest) {
 
     // Validate key format for sandbox
     if (!isProduction) {
-      if (!serverKey.startsWith('SB-Mid-server-')) {
+      if (!serverKey.startsWith("SB-Mid-server-")) {
         console.error("Invalid sandbox server key format");
         return Response.json(
-          { 
+          {
             error: "Invalid server key format",
-            details: "Sandbox server key should start with 'SB-Mid-server-'"
+            details: "Sandbox server key should start with 'SB-Mid-server-'",
           },
           { status: 500 }
         );
       }
-      
-      if (!clientKey.startsWith('SB-Mid-client-')) {
+
+      if (!clientKey.startsWith("SB-Mid-client-")) {
         console.error("Invalid sandbox client key format");
         return Response.json(
-          { 
+          {
             error: "Invalid client key format",
-            details: "Sandbox client key should start with 'SB-Mid-client-'"
+            details: "Sandbox client key should start with 'SB-Mid-client-'",
           },
           { status: 500 }
         );
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Import and initialize Midtrans
     let Snap: any;
     try {
-      const midtransClient = require('midtrans-client');
+      const midtransClient = require("midtrans-client");
       Snap = midtransClient.Snap;
     } catch (error) {
       console.error("Failed to import midtrans-client:", error);
@@ -89,10 +90,7 @@ export async function POST(request: NextRequest) {
     // Validate items array
     if (!Array.isArray(items) || items.length === 0) {
       console.error("Invalid items array");
-      return Response.json(
-        { error: "Invalid items data" },
-        { status: 400 }
-      );
+      return Response.json({ error: "Invalid items data" }, { status: 400 });
     }
 
     // Generate unique order ID
@@ -108,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate subtotal from items
     const subtotal = processedItems.reduce((total, item) => {
-      return total + (item.price * item.quantity);
+      return total + item.price * item.quantity;
     }, 0);
 
     // Calculate tax (11%)
@@ -122,7 +120,7 @@ export async function POST(request: NextRequest) {
         price: tax,
         quantity: 1,
         name: "Pajak (11%)",
-      }
+      },
     ];
 
     // Calculate final gross amount
@@ -133,7 +131,7 @@ export async function POST(request: NextRequest) {
       tax,
       grossAmount,
       providedTotalAmount: totalAmount,
-      itemsCount: processedItems.length
+      itemsCount: processedItems.length,
     });
 
     // Prepare transaction details
@@ -171,27 +169,45 @@ export async function POST(request: NextRequest) {
 
     // Validate that gross_amount equals sum of item_details
     const calculatedTotal = parameter.item_details.reduce((total, item) => {
-      return total + (item.price * item.quantity);
+      return total + item.price * item.quantity;
     }, 0);
 
     if (parameter.transaction_details.gross_amount !== calculatedTotal) {
       console.error("Amount mismatch:", {
         gross_amount: parameter.transaction_details.gross_amount,
         calculated_total: calculatedTotal,
-        difference: parameter.transaction_details.gross_amount - calculatedTotal
+        difference:
+          parameter.transaction_details.gross_amount - calculatedTotal,
       });
-      
+
       // Fix the gross amount to match calculated total
       parameter.transaction_details.gross_amount = calculatedTotal;
     }
 
     console.log("Creating transaction with order_id:", finalOrderId);
-    console.log("Final transaction amount:", parameter.transaction_details.gross_amount);
+    console.log(
+      "Final transaction amount:",
+      parameter.transaction_details.gross_amount
+    );
     console.log("Items total verification:", calculatedTotal);
 
     // Create transaction token
     const transaction = await snap.createTransaction(parameter);
-    
+    // save to data base order
+    await OrderModel.createOrder({
+      orderId: finalOrderId,
+      tableId: tableId,
+      items: processedItems,
+      totalAmount: parameter.transaction_details.gross_amount,
+      status: "pending",
+      paymentMethod: "midtrans",
+      midtrans: {
+        token: transaction.token,
+        redirect_url: transaction.redirect_url,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
     console.log("Transaction created successfully");
 
     return Response.json({
@@ -201,7 +217,6 @@ export async function POST(request: NextRequest) {
       order_id: finalOrderId,
       amount: parameter.transaction_details.gross_amount,
     });
-
   } catch (error: any) {
     console.error("Detailed Midtrans payment error:", {
       message: error.message,
@@ -213,10 +228,10 @@ export async function POST(request: NextRequest) {
     // Handle specific Midtrans API errors
     if (error.response?.status === 401) {
       return Response.json(
-        { 
+        {
           error: "Unauthorized - Invalid API keys",
           details: "Please check your Midtrans server key and client key",
-          midtransError: error.response?.data
+          midtransError: error.response?.data,
         },
         { status: 401 }
       );
@@ -224,17 +239,19 @@ export async function POST(request: NextRequest) {
 
     if (error.response?.status === 400) {
       return Response.json(
-        { 
+        {
           error: "Bad Request",
-          details: error.response?.data?.error_messages?.join(', ') || "Invalid request data",
-          midtransError: error.response?.data
+          details:
+            error.response?.data?.error_messages?.join(", ") ||
+            "Invalid request data",
+          midtransError: error.response?.data,
         },
         { status: 400 }
       );
     }
 
     return Response.json(
-      { 
+      {
         error: "Failed to create payment",
         details: error.message || "Unknown error occurred",
         timestamp: new Date().toISOString(),
