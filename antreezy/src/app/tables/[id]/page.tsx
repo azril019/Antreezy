@@ -1,7 +1,7 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {useParams, useRouter} from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   Star,
   Users,
@@ -16,8 +16,7 @@ import {
   LucideGlobe,
   AtSign,
 } from "lucide-react";
-import Link from "next/link";
-import {NewTable} from "@/app/types";
+import { NewTable } from "@/app/types";
 
 interface Restaurant {
   id: string;
@@ -91,7 +90,7 @@ export default function TablePage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]); // Ensure it's initialized as empty array
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState<number>(0);
 
@@ -101,10 +100,14 @@ export default function TablePage() {
       const response = await fetch(`/api/cart?tableId=${tableId}`);
       if (response.ok) {
         const cartData = await response.json();
-        setCart(cartData);
+        // Ensure cartData is an array
+        setCart(Array.isArray(cartData) ? cartData : []);
+      } else {
+        setCart([]); // Set empty array if response is not ok
       }
     } catch (error) {
       console.error("Error fetching cart:", error);
+      setCart([]); // Set empty array on error
     }
   };
 
@@ -234,6 +237,10 @@ export default function TablePage() {
   };
   // Calculate total cart items
   const getTotalCartItems = () => {
+    // Add safety check to ensure cart is an array
+    if (!Array.isArray(cart)) {
+      return 0;
+    }
     return cart.reduce((total, item) => total + item.quantity, 0);
   };
   const menuCategories = getMenuCategories();
@@ -289,7 +296,8 @@ export default function TablePage() {
           <p className="text-gray-600 mt-2">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
             Try Again
           </button>
         </div>
@@ -343,7 +351,8 @@ export default function TablePage() {
             <div className="relative">
               <button
                 onClick={handleCartClick}
-                className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors">
+                className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors"
+              >
                 <ShoppingCart className="w-5 h-5 text-white" />
               </button>
               {getTotalCartItems() > 0 && (
@@ -365,7 +374,7 @@ export default function TablePage() {
             {restaurant.coverImage ? (
               <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{backgroundImage: `url(${restaurant.coverImage})`}}
+                style={{ backgroundImage: `url(${restaurant.coverImage})` }}
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600" />
@@ -404,7 +413,8 @@ export default function TablePage() {
               <div className="mb-4">
                 <div
                   onClick={() => handleCategoryClick("Semua")}
-                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:-translate-y-0.5 border-2 border-transparent hover:border-orange-300">
+                  className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:-translate-y-0.5 border-2 border-transparent hover:border-orange-300"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="text-3xl mr-3">🍽️</div>
@@ -431,7 +441,8 @@ export default function TablePage() {
                   <div
                     key={index}
                     onClick={() => handleCategoryClick(category.name)}
-                    className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:-translate-y-0.5 border-2 border-transparent hover:border-orange-300">
+                    className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:-translate-y-0.5 border-2 border-transparent hover:border-orange-300"
+                  >
                     <div className="text-center">
                       <div className="text-5xl mb-3">{category.icon}</div>
                       <h4 className="font-semibold text-gray-800 mb-1 text-lg">
@@ -488,7 +499,8 @@ export default function TablePage() {
               {reviews.map((review) => (
                 <div
                   key={review.id}
-                  className="bg-white rounded-xl p-4 shadow-sm">
+                  className="bg-white rounded-xl p-4 shadow-sm"
+                >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -586,7 +598,8 @@ export default function TablePage() {
                     openSocialMedia("instagram", restaurant.contact?.instagram!)
                   }
                   className="p-2 rounded-full hover:bg-pink-50 transition-colors"
-                  title={`Follow us on Instagram: ${restaurant.contact.instagram}`}>
+                  title={`Follow us on Instagram: ${restaurant.contact.instagram}`}
+                >
                   <Instagram className="w-6 h-6 text-pink-500 cursor-pointer hover:text-pink-600 transition-colors" />
                 </button>
               )}
@@ -597,7 +610,8 @@ export default function TablePage() {
                     openSocialMedia("facebook", restaurant.contact?.facebook!)
                   }
                   className="p-2 rounded-full hover:bg-blue-50 transition-colors"
-                  title={`Visit our Facebook: ${restaurant.contact.facebook}`}>
+                  title={`Visit our Facebook: ${restaurant.contact.facebook}`}
+                >
                   <Facebook className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-700 transition-colors" />
                 </button>
               )}
@@ -608,7 +622,8 @@ export default function TablePage() {
                     openSocialMedia("whatsapp", restaurant.contact?.whatsapp!)
                   }
                   className="p-2 rounded-full hover:bg-green-50 transition-colors"
-                  title={`Chat us on WhatsApp: ${restaurant.contact.whatsapp}`}>
+                  title={`Chat us on WhatsApp: ${restaurant.contact.whatsapp}`}
+                >
                   <MessageCircle className="w-6 h-6 text-green-500 cursor-pointer hover:text-green-600 transition-colors" />
                 </button>
               )}
@@ -619,7 +634,8 @@ export default function TablePage() {
                     openSocialMedia("twitter", restaurant.contact?.twitter!)
                   }
                   className="p-2 rounded-full hover:bg-gray-50 transition-colors"
-                  title={`Follow us on Twitter: ${restaurant.contact.twitter}`}>
+                  title={`Follow us on Twitter: ${restaurant.contact.twitter}`}
+                >
                   <TwitterIcon className="w-6 h-6 text-black cursor-pointer hover:text-gray-600 transition-colors" />
                 </button>
               )}
@@ -630,13 +646,15 @@ export default function TablePage() {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <button
             onClick={() => router.push(`/tables/${tableId}/menu`)}
-            className="flex items-center justify-center p-4 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors">
+            className="flex items-center justify-center p-4 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
+          >
             <span className="text-lg font-semibold">🍽️ Lihat Menu</span>
           </button>
 
           <button
             onClick={() => router.push(`/tables/${tableId}/orders`)}
-            className="flex items-center justify-center p-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+            className="flex items-center justify-center p-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+          >
             <span className="text-lg font-semibold">📋 Status Pesanan</span>
           </button>
         </div>

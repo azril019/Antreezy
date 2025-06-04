@@ -280,38 +280,22 @@ export default function CartPage() {
   };
 
   const processPayment = async () => {
-    if (cart.length === 0) return;
+    if (!customerDetails.name.trim()) {
+      setFormErrors({ name: "Nama tidak boleh kosong" });
+      return;
+    }
 
     setIsProcessingPayment(true);
 
     try {
-      // Calculate subtotal from cart items
-      const subtotal = cart.reduce((total, item) => {
-        const price = item?.price || 0;
-        const quantity = item?.quantity || 0;
-        return total + (price * quantity);
-      }, 0);
+      const totalAmount = Math.round(totalPrice * 1.11);
 
-      // Calculate tax (11%)
-      const tax = Math.round(subtotal * 0.11);
-
-      // Total amount (subtotal + tax)
-      const totalAmount = subtotal + tax;
-
-      console.log("Payment calculation:", {
-        subtotal,
-        tax,
-        totalAmount,
-        cartItems: cart.length,
-      });
-
-      // Prepare payment data
       const paymentData = {
         tableId,
         items: cart.map((item) => ({
           id: item?.id || '',
           name: item?.name || '',
-          price: Math.round(item?.price || 0), // Ensure integer
+          price: Math.round(item?.price || 0),
           quantity: item?.quantity || 0,
         })),
         totalAmount,
@@ -327,29 +311,10 @@ export default function CartPage() {
       // Create payment token
       const paymentResult = await createPayment(paymentData);
 
-      // Update cart status to active and queue
-      const cartResponse = await fetch("/api/cart", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          tableId,
-          action: "updateStatus",
-          status: "queue",
-          isActive: true,
-        }),
-      });
-
-      if (!cartResponse.ok) {
-        throw new Error("Failed to update cart status");
-      }
-
       // Initiate Midtrans payment
       await initiateMidtransPayment(paymentResult.token);
 
       // Payment success will be handled by Midtrans callbacks
-      // For now, navigate to success page
       router.push(`/tables/${tableId}/payment/success`);
     } catch (error) {
       console.error("Payment error:", error);

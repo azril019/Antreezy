@@ -10,6 +10,35 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
+interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+interface Order {
+  _id: string;
+  orderId?: string;
+  tableId: string;
+  items: OrderItem[];
+  totalAmount?: number;
+  status: string;
+  isActive?: boolean;
+  customerDetails?: {
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface User {
+  username: string;
+  role: string;
+}
+
 export default function AdminDashboard() {
   // Refs for cleanup
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -19,64 +48,83 @@ export default function AdminDashboard() {
     pending: {
       icon: Clock,
       color: "bg-yellow-500",
+      bgColor: "bg-yellow-100",
+      textColor: "text-yellow-800",
       label: "Pending",
     },
     queue: {
       icon: Clock,
       color: "bg-blue-500",
+      bgColor: "bg-blue-100",
+      textColor: "text-blue-800",
       label: "Dalam Antrian",
     },
     cooking: {
       icon: ChefHat,
       color: "bg-orange-500",
+      bgColor: "bg-orange-100",
+      textColor: "text-orange-800",
       label: "Sedang Dimasak",
     },
     served: {
       icon: CheckCircle,
       color: "bg-green-500",
+      bgColor: "bg-green-100",
+      textColor: "text-green-800",
       label: "Siap Disajikan",
     },
     done: {
       icon: Check,
       color: "bg-gray-500",
+      bgColor: "bg-gray-100",
+      textColor: "text-gray-800",
       label: "Selesai",
     },
     paid: {
       icon: CheckCircle,
       color: "bg-green-500",
+      bgColor: "bg-green-100",
+      textColor: "text-green-800",
       label: "Dibayar",
     },
     settlement: {
       icon: CheckCircle,
       color: "bg-green-500",
+      bgColor: "bg-green-100",
+      textColor: "text-green-800",
       label: "Selesai",
     },
     capture: {
       icon: CheckCircle,
       color: "bg-green-500",
+      bgColor: "bg-green-100",
+      textColor: "text-green-800",
       label: "Selesai",
     },
     failed: {
       icon: XCircle,
       color: "bg-red-500",
+      bgColor: "bg-red-100",
+      textColor: "text-red-800",
       label: "Gagal",
     },
     cancelled: {
       icon: XCircle,
       color: "bg-gray-500",
+      bgColor: "bg-gray-100",
+      textColor: "text-gray-800",
       label: "Dibatalkan",
     },
   };
 
-  const [orders, setOrders] = useState<any[]>([]);
-  const [completedOrders, setCompletedOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
   const [tables, setTables] = useState<any[]>([]);
-  const [user, setUser] = useState<{ username: string; role: string } | null>(
-    null
-  );
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  console.log(completedOrders, "completedOrders");
 
   const fetchData = async (showRefreshIndicator = false) => {
     try {
@@ -91,31 +139,23 @@ export default function AdminDashboard() {
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      const [ordersRes, tablesRes] = await Promise.all([
-        fetch("/api/cart", { signal }),
-        fetch("/api/tables", { signal }),
-      ]);
+      // Fetch orders
+      const ordersRes = await fetch("/api/orders", { signal });
+      const completedOrdersRes = await fetch("/api/orders?status=done");
+      const tablesRes = await fetch("/api/tables", { signal });
 
-      if (signal.aborted) return;
+      if (
+        !signal.aborted &&
+        ordersRes.ok &&
+        completedOrdersRes.ok &&
+        tablesRes.ok
+      ) {
+        const activeOrdersData = await ordersRes.json();
+        const completedOrdersData = await completedOrdersRes.json();
+        const tablesData = await tablesRes.json();
 
-      const [ordersData, tablesData] = await Promise.all([
-        ordersRes.ok ? ordersRes.json() : { data: [] },
-        tablesRes.ok ? tablesRes.json() : [],
-      ]);
-
-      if (!signal.aborted) {
-        const allOrders = ordersData.data || [];
-
-        // Separate active and completed orders
-        const activeOrders = allOrders.filter(
-          (order: any) => order.status !== "done"
-        );
-        const doneOrders = allOrders.filter(
-          (order: any) => order.status === "done"
-        );
-
-        setOrders(activeOrders);
-        setCompletedOrders(doneOrders);
+        setOrders(activeOrdersData);
+        setCompletedOrders(completedOrdersData);
         setTables(
           Array.isArray(tablesData) ? tablesData : tablesData.data || []
         );
@@ -204,30 +244,48 @@ export default function AdminDashboard() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const response = await fetch("/api/cart", {
-        method: "POST",
+      console.log("Updating order:", orderId, "to status:", newStatus);
+
+      const response = await fetch("/api/orders", {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          tableId: orderId, // Assuming orderId is tableId for cart updates
-          action: "updateStatus",
+          orderId,
           status: newStatus,
-          isActive: newStatus !== "served" && newStatus !== "done",
+          isActive: !["done", "settlement", "capture"].includes(newStatus),
         }),
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log("Order updated successfully:", result);
+
         // Refresh data after update
         fetchData(false);
+      } else {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { error: errorText || "Unknown error" };
+        }
+        console.error("Error updating order:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+        });
+        alert("Gagal mengupdate status pesanan");
       }
     } catch (error) {
       console.error("Error updating order status:", error);
+      alert("Terjadi kesalahan saat mengupdate status pesanan");
     }
   };
-
   const renderOrderTable = (
-    ordersList: any[],
+    ordersList: Order[],
     title: string,
     isCompleted = false
   ) => (
@@ -261,13 +319,16 @@ export default function AdminDashboard() {
                 Meja
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Pemesan
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Item
+                Waktu
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Waktu
+                Total
               </th>
               {!isCompleted && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -278,41 +339,58 @@ export default function AdminDashboard() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {ordersList.map((order) => {
-              const status =
-                statusConfig[order.status as keyof typeof statusConfig];
-              const StatusIcon = status?.icon || Clock;
+              const status = statusConfig[
+                order.status as keyof typeof statusConfig
+              ] || {
+                icon: Clock,
+                color: "bg-gray-500",
+                bgColor: "bg-gray-100",
+                textColor: "text-gray-800",
+                label: "Unknown",
+              };
+              const StatusIcon = status.icon;
 
               return (
                 <tr
                   key={order._id}
-                  className={`hover:bg-gray-50 ${isCompleted ? "opacity-75" : ""}`}
+                  className={`hover:bg-gray-50 ${
+                    isCompleted ? "opacity-75" : ""
+                  }`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    #{order._id?.slice(-6).toUpperCase()}
+                    #{(order._id || "").slice(-6).toUpperCase()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     Meja {order.tableId}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div
-                        className={`p-1 rounded-full ${status?.color} mr-2`}
-                      >
-                        <StatusIcon className="w-3 h-3 text-white" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {order.customerDetails?.name ||
+                          `Table-${order.tableId}`}
                       </div>
-                      <span className="text-sm font-medium text-gray-900">
-                        {status?.label}
-                      </span>
+                      {order.customerDetails?.phone && (
+                        <div className="text-sm text-gray-500">
+                          {order.customerDetails.phone}
+                        </div>
+                      )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.items?.length || 0} item
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.bgColor} ${status.textColor}`}
+                    >
+                      <StatusIcon className="w-3 h-3 mr-1" />
+                      {status.label}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(order.createdAt).toLocaleTimeString("id-ID", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {order.createdAt
+                      ? new Date(order.createdAt).toLocaleTimeString("id-ID")
+                      : "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    Rp {order.totalAmount?.toLocaleString("id-ID")}
                   </td>
                   {!isCompleted && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -320,9 +398,9 @@ export default function AdminDashboard() {
                         {order.status === "queue" && (
                           <button
                             onClick={() =>
-                              updateOrderStatus(order.tableId, "cooking")
+                              updateOrderStatus(order._id, "cooking")
                             }
-                            className="bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600"
+                            className="bg-orange-500 text-white px-3 py-1 rounded text-xs hover:bg-orange-600 transition-colors disabled:bg-gray-400"
                           >
                             Mulai Masak
                           </button>
@@ -330,14 +408,21 @@ export default function AdminDashboard() {
                         {order.status === "cooking" && (
                           <button
                             onClick={() =>
-                              updateOrderStatus(order.tableId, "served")
+                              updateOrderStatus(order._id, "served")
                             }
-                            className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600"
+                            className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600 transition-colors disabled:bg-gray-400"
                           >
                             Siap Saji
                           </button>
                         )}
-                        {/* Served orders akan tetap ditampilkan sampai user klik Done */}
+                        {order.status === "served" && (
+                          <button
+                            onClick={() => updateOrderStatus(order._id, "done")}
+                            className="bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600 transition-colors disabled:bg-gray-400"
+                          >
+                            Selesai
+                          </button>
+                        )}
                       </div>
                     </td>
                   )}
@@ -410,7 +495,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -466,14 +551,27 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Pesanan Selesai</p>
+              <p className="text-2xl font-bold text-gray-600">
+                {totalCompletedOrders}
+              </p>
+            </div>
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Check className="w-5 h-5 text-gray-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Active Orders Table */}
       {renderOrderTable(orders, "Pesanan Aktif", false)}
 
-      {/* Completed Orders Table */}
-      {completedOrders.length > 0 &&
-        renderOrderTable(completedOrders, "Pesanan Selesai", true)}
+      {/* Completed Orders Table - Always show this section */}
+      {renderOrderTable(completedOrders, "Pesanan Selesai", true)}
     </div>
   );
 }

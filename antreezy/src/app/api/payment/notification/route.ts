@@ -1,5 +1,4 @@
 import OrderModel from "@/db/models/OrderModel";
-import CartModel from "@/db/models/CartModel";
 
 export async function POST(request: Request) {
   try {
@@ -14,21 +13,22 @@ export async function POST(request: Request) {
 
     // Process the notification data
     console.log("Received notification for order:", notificationData.order_id);
-    
+
     // Update order status in your database
     const updatedOrder = await OrderModel.updateOrderStatus(
       notificationData.order_id,
       notificationData.transaction_status
     );
 
-    // If payment is successful, activate cart for queue
-    if (notificationData.transaction_status === "settlement" || 
-        notificationData.transaction_status === "capture") {
-      
-      if (updatedOrder) {
-        // Activate cart and set status to queue
-        await CartModel.activateCartForQueue(updatedOrder.tableId);
-        console.log(`Cart activated for table ${updatedOrder.tableId}`);
+    // If payment is successful, set status to queue and isActive to true
+    if (
+      notificationData.transaction_status === "settlement" ||
+      notificationData.transaction_status === "capture"
+    ) {
+      if (updatedOrder && updatedOrder._id) {
+        // Update order status to "queue" and set isActive to true
+        await OrderModel.updateOrderStatus(updatedOrder._id, "queue");
+        console.log(`Order ${updatedOrder._id} status updated to queue`);
       }
     }
 
