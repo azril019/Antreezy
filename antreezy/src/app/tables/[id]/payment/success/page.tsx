@@ -9,10 +9,10 @@ export default function PaymentSuccessPage() {
   const router = useRouter();
   const tableId = params.id as string;
 
+  // Clear cart when payment is successful
   useEffect(() => {
-    const handlePaymentSuccess = async () => {
+    const clearCartAfterSuccess = async () => {
       try {
-        // Activate cart for queue processing
         await fetch("/api/cart", {
           method: "POST",
           headers: {
@@ -20,17 +20,15 @@ export default function PaymentSuccessPage() {
           },
           body: JSON.stringify({
             tableId,
-            action: "updateStatus",
-            status: "queue",
-            isActive: true,
+            action: "clear",
           }),
         });
       } catch (error) {
-        console.error("Error handling payment success:", error);
+        console.error("Error clearing cart after successful payment:", error);
       }
     };
 
-    handlePaymentSuccess();
+    clearCartAfterSuccess();
   }, [tableId]);
 
   return (

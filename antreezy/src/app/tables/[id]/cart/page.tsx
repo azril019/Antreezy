@@ -311,6 +311,9 @@ export default function CartPage() {
       // Create payment token
       const paymentResult = await createPayment(paymentData);
 
+      // Clear cart immediately after successful payment token creation
+      await clearCart();
+
       // Initiate Midtrans payment
       await initiateMidtransPayment(paymentResult.token);
 
@@ -319,6 +322,9 @@ export default function CartPage() {
     } catch (error) {
       console.error("Payment error:", error);
       alert("Terjadi kesalahan dalam proses pembayaran. Silakan coba lagi.");
+      
+      // If payment fails, we might want to restore the cart or let user retry
+      // For now, we'll leave the cart as is so user can retry
     } finally {
       setIsProcessingPayment(false);
       setShowCustomerForm(false);
