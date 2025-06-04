@@ -68,10 +68,11 @@ export default function CartPage() {
       if (response.ok) {
         const cartData = await response.json();
         console.log("Cart data received:", cartData);
-        
+
         // Handle array response
         if (Array.isArray(cartData)) {
-          const cartItems = cartData.length > 0 && cartData[0]?.items ? cartData[0].items : [];
+          const cartItems =
+            cartData.length > 0 && cartData[0]?.items ? cartData[0].items : [];
           setCart(cartItems);
         } else if (cartData?.items) {
           setCart(cartData.items);
@@ -236,7 +237,7 @@ export default function CartPage() {
     return cart.reduce((total, item) => {
       const price = item?.price || 0;
       const quantity = item?.quantity || 0;
-      return total + (price * quantity);
+      return total + price * quantity;
     }, 0);
   };
 
@@ -293,12 +294,13 @@ export default function CartPage() {
       const paymentData = {
         tableId,
         items: cart.map((item) => ({
-          id: item?.id || '',
-          name: item?.name || '',
+          id: item?.id || "",
+          name: item?.name || "",
           price: Math.round(item?.price || 0),
           quantity: item?.quantity || 0,
         })),
         totalAmount,
+        paymentType: "credit_card" as const, // Add default payment type, you can make this dynamic
         customerDetails: {
           name: customerDetails.name || `Table ${table?.nomor}`,
           email: customerDetails.email,
@@ -322,7 +324,7 @@ export default function CartPage() {
     } catch (error) {
       console.error("Payment error:", error);
       alert("Terjadi kesalahan dalam proses pembayaran. Silakan coba lagi.");
-      
+
       // If payment fails, we might want to restore the cart or let user retry
       // For now, we'll leave the cart as is so user can retry
     } finally {
@@ -401,7 +403,9 @@ export default function CartPage() {
                 <h1 className="font-bold text-gray-800 text-lg leading-tight">
                   Keranjang
                 </h1>
-                <p className="text-sm text-gray-500">Meja #{table?.nomor || 'Unknown'}</p>
+                <p className="text-sm text-gray-500">
+                  Meja #{table?.nomor || "Unknown"}
+                </p>
               </div>
             </div>
           </div>
@@ -427,7 +431,7 @@ export default function CartPage() {
               {cart.map((item) => {
                 const itemPrice = item?.price || 0;
                 const itemQuantity = item?.quantity || 0;
-                
+
                 return (
                   <div
                     key={item?.id || Math.random()}
@@ -436,10 +440,10 @@ export default function CartPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-800 mb-1">
-                          {item?.name || 'Unknown Item'}
+                          {item?.name || "Unknown Item"}
                         </h4>
                         <p className="text-orange-600 font-bold">
-                          Rp {itemPrice.toLocaleString('id-ID')}
+                          Rp {itemPrice.toLocaleString("id-ID")}
                         </p>
                       </div>
 
@@ -448,7 +452,7 @@ export default function CartPage() {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() =>
-                              updateQuantity(item?.id || '', itemQuantity - 1)
+                              updateQuantity(item?.id || "", itemQuantity - 1)
                             }
                             className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
                           >
@@ -461,7 +465,7 @@ export default function CartPage() {
 
                           <button
                             onClick={() =>
-                              updateQuantity(item?.id || '', itemQuantity + 1)
+                              updateQuantity(item?.id || "", itemQuantity + 1)
                             }
                             className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors"
                           >
@@ -471,7 +475,7 @@ export default function CartPage() {
 
                         {/* Remove Button */}
                         <button
-                          onClick={() => removeFromCart(item?.id || '')}
+                          onClick={() => removeFromCart(item?.id || "")}
                           className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors"
                         >
                           <Trash2 className="w-4 h-4 text-red-600" />
@@ -484,7 +488,8 @@ export default function CartPage() {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Subtotal</span>
                         <span className="font-semibold text-gray-800">
-                          Rp {(itemPrice * itemQuantity).toLocaleString('id-ID')}
+                          Rp{" "}
+                          {(itemPrice * itemQuantity).toLocaleString("id-ID")}
                         </span>
                       </div>
                     </div>
@@ -549,14 +554,14 @@ export default function CartPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
                   <span className="text-gray-800">
-                    Rp {totalPrice.toLocaleString('id-ID')}
+                    Rp {totalPrice.toLocaleString("id-ID")}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Pajak(11%)</span>
                   <span className="text-gray-800">
-                    Rp {Math.round(totalPrice * 0.11).toLocaleString('id-ID')}
+                    Rp {Math.round(totalPrice * 0.11).toLocaleString("id-ID")}
                   </span>
                 </div>
 
@@ -564,7 +569,7 @@ export default function CartPage() {
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-800">Total</span>
                     <span className="font-bold text-lg text-orange-600">
-                      Rp {Math.round(totalPrice * 1.11).toLocaleString('id-ID')}
+                      Rp {Math.round(totalPrice * 1.11).toLocaleString("id-ID")}
                     </span>
                   </div>
                 </div>
@@ -594,7 +599,7 @@ export default function CartPage() {
             </button>
           </div>
         )}
-        
+
         {/* Checkout Button */}
         {cart.length > 0 && (
           <button

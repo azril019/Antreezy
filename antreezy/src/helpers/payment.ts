@@ -7,6 +7,7 @@ export interface PaymentData {
     quantity: number;
   }>;
   totalAmount: number;
+  paymentType?: "qris" | "cash" | "bank_transfer" | "credit_card" | "e_wallet"; // Add payment_type field
   customerDetails?: {
     name?: string;
     phone?: string;

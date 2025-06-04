@@ -80,41 +80,6 @@ export default function AdminDashboard() {
       textColor: "text-gray-800",
       label: "Selesai",
     },
-    paid: {
-      icon: CheckCircle,
-      color: "bg-green-500",
-      bgColor: "bg-green-100",
-      textColor: "text-green-800",
-      label: "Dibayar",
-    },
-    settlement: {
-      icon: CheckCircle,
-      color: "bg-green-500",
-      bgColor: "bg-green-100",
-      textColor: "text-green-800",
-      label: "Selesai",
-    },
-    capture: {
-      icon: CheckCircle,
-      color: "bg-green-500",
-      bgColor: "bg-green-100",
-      textColor: "text-green-800",
-      label: "Selesai",
-    },
-    failed: {
-      icon: XCircle,
-      color: "bg-red-500",
-      bgColor: "bg-red-100",
-      textColor: "text-red-800",
-      label: "Gagal",
-    },
-    cancelled: {
-      icon: XCircle,
-      color: "bg-gray-500",
-      bgColor: "bg-gray-100",
-      textColor: "text-gray-800",
-      label: "Dibatalkan",
-    },
   };
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -254,7 +219,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           orderId,
           status: newStatus,
-          isActive: !["done", "settlement", "capture"].includes(newStatus),
+          isActive: !["done"].includes(newStatus),
         }),
       });
 

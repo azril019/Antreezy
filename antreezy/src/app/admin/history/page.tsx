@@ -9,7 +9,6 @@ import {
   DollarSign,
   ShoppingBag,
   CheckCircle,
-  XCircle,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -28,7 +27,6 @@ interface OrderHistory {
     name: string;
     phone?: string;
   };
-  status: string;
   paymentMethod: string;
   createdAt: string;
   updatedAt: string;
@@ -45,7 +43,9 @@ interface TransactionStats {
 
 export default function TransactionHistoryPage() {
   const [transactions, setTransactions] = useState<OrderHistory[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<OrderHistory[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<
+    OrderHistory[]
+  >([]);
   const [stats, setStats] = useState<TransactionStats>({
     totalTransactions: 0,
     totalRevenue: 0,
@@ -55,16 +55,16 @@ export default function TransactionHistoryPage() {
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-  const [selectedTransaction, setSelectedTransaction] = useState<OrderHistory | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<OrderHistory | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
   // Fetch hanya status "done"
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/orders");
+      const response = await fetch("/api/orders?status=done");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -96,9 +96,10 @@ export default function TransactionHistoryPage() {
           paymentMethod: order.paymentMethod || "Unknown",
           createdAt: order.createdAt || new Date().toISOString(),
           updatedAt: order.updatedAt || new Date().toISOString(),
-          completedAt: order.completedAt || order.updatedAt || new Date().toISOString(),
+          completedAt:
+            order.completedAt || order.updatedAt || new Date().toISOString(),
         }));
-        console.log("Fetched transactions:", doneOrders);
+      console.log("Fetched transactions:", doneOrders);
 
       setTransactions(doneOrders);
       setFilteredTransactions(doneOrders);
@@ -125,17 +126,24 @@ export default function TransactionHistoryPage() {
       return;
     }
     const totalTransactions = orders.length;
-    const totalRevenue = orders.reduce((sum, order) => sum + (Number(order.totalAmount) || 0), 0);
+    const totalRevenue = orders.reduce(
+      (sum, order) => sum + (Number(order.totalAmount) || 0),
+      0
+    );
     const totalItems = orders.reduce(
       (sum, order) =>
         sum +
         (Array.isArray(order.items)
-          ? order.items.reduce((itemSum, item) => itemSum + (Number(item.quantity) || 0), 0)
+          ? order.items.reduce(
+              (itemSum, item) => itemSum + (Number(item.quantity) || 0),
+              0
+            )
           : 0),
       0
     );
     const successfulTransactions = orders.length; // semua "done"
-    const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+    const averageOrderValue =
+      totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
     setStats({
       totalTransactions,
@@ -153,7 +161,9 @@ export default function TransactionHistoryPage() {
       filtered = filtered.filter((transaction) => {
         const searchLower = searchTerm.toLowerCase();
         const orderId = (transaction.orderId || "").toLowerCase();
-        const customerName = (transaction.customerDetails?.name || "").toLowerCase();
+        const customerName = (
+          transaction.customerDetails?.name || ""
+        ).toLowerCase();
         const tableId = (transaction.tableId || "").toString().toLowerCase();
         return (
           orderId.includes(searchLower) ||
@@ -161,9 +171,6 @@ export default function TransactionHistoryPage() {
           tableId.includes(searchLower)
         );
       });
-    }
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((transaction) => transaction.status === statusFilter);
     }
     if (dateFilter !== "all") {
       const now = new Date();
@@ -190,7 +197,7 @@ export default function TransactionHistoryPage() {
     }
     setFilteredTransactions(filtered);
     calculateStats(filtered);
-  }, [transactions, searchTerm, statusFilter, dateFilter]);
+  }, [transactions, searchTerm, dateFilter]);
 
   useEffect(() => {
     fetchTransactions();
@@ -218,53 +225,23 @@ export default function TransactionHistoryPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      done: {
-        color: "bg-green-100 text-green-800",
-        icon: CheckCircle,
-        label: "Selesai",
-      },
-      failed: {
-        color: "bg-red-100 text-red-800",
-        icon: XCircle,
-        label: "Gagal",
-      },
-      cancelled: {
-        color: "bg-gray-100 text-gray-800",
-        icon: XCircle,
-        label: "Dibatalkan",
-      },
-    };
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.failed;
-    const Icon = config.icon;
-    return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-        <Icon className="w-3 h-3 mr-1" />
-        {config.label}
-      </span>
-    );
-  };
-
   const exportToCSV = () => {
-    if (!Array.isArray(filteredTransactions) || filteredTransactions.length === 0) {
+    if (
+      !Array.isArray(filteredTransactions) ||
+      filteredTransactions.length === 0
+    ) {
       toast.error("Tidak ada data untuk diekspor");
       return;
     }
-    const headers = [
-      "ID Pesanan",
-      "Meja",
-      "Pelanggan",
-      "Total",
-      "Status",
-      "Tanggal",
-    ];
+    const headers = ["ID Pesanan", "Meja", "Pelanggan", "Metode Bayar", "Total", "Tanggal"];
     const csvData = filteredTransactions.map((transaction) => [
       transaction.orderId || "",
       `Meja ${transaction.tableId || ""}`,
       transaction.customerDetails?.name || "",
+      transaction.paymentMethod === "cash" ? "Tunai" : 
+      transaction.paymentMethod === "qris" ? "QRIS" : 
+      transaction.paymentMethod || "Unknown",
       transaction.totalAmount || 0,
-      transaction.status || "",
       formatDate(transaction.createdAt),
     ]);
     const csvContent = [headers, ...csvData]
@@ -274,7 +251,9 @@ export default function TransactionHistoryPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `riwayat-transaksi-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `riwayat-transaksi-${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -393,15 +372,6 @@ export default function TransactionHistoryPage() {
 
               <select
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-black"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">Semua Status</option>
-                <option value="done">Selesai</option>
-              </select>
-
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-black"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
               >
@@ -444,10 +414,10 @@ export default function TransactionHistoryPage() {
                       Items
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total
+                      Metode Bayar
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Total
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Tanggal
@@ -480,11 +450,21 @@ export default function TransactionHistoryPage() {
                           : 0}{" "}
                         item
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          transaction.paymentMethod === "cash" 
+                            ? "bg-green-100 text-green-800"
+                            : transaction.paymentMethod === "qris"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}>
+                          {transaction.paymentMethod === "cash" ? "Tunai" : 
+                           transaction.paymentMethod === "qris" ? "QRIS" : 
+                           transaction.paymentMethod || "Unknown"}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {formatCurrency(transaction.totalAmount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(transaction.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(transaction.createdAt)}
@@ -544,10 +524,6 @@ export default function TransactionHistoryPage() {
                     <p>
                       <span className="text-gray-500">Meja:</span>{" "}
                       {selectedTransaction.tableId || "N/A"}
-                    </p>
-                    <p>
-                      <span className="text-gray-500">Status:</span>{" "}
-                      {getStatusBadge(selectedTransaction.status)}
                     </p>
                     <p>
                       <span className="text-gray-500">Metode Bayar:</span>{" "}

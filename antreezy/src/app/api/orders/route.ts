@@ -58,8 +58,6 @@ export async function PUT(request: NextRequest) {
       "cooking",
       "served",
       "done",
-      "settlement",
-      "capture",
       "failed",
       "cancelled",
     ];

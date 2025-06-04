@@ -25,7 +25,7 @@ export interface Cart {
     price: number;
     quantity: number;
   }>;
-  status: "pending" | "queue" | "cooking" | "served" | "done" | "cancelled";
+  status: "pending" | "queue" | "cooking" | "served" | "done";
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
