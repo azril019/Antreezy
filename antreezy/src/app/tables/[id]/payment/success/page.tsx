@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CheckCircle } from "lucide-react";
+import { useEffect } from "react";
+import { CheckCircle, CreditCard } from "lucide-react";
 
 export default function PaymentSuccessPage() {
   const params = useParams();
@@ -10,9 +10,9 @@ export default function PaymentSuccessPage() {
   const tableId = params.id as string;
 
   useEffect(() => {
-    // Clear cart after successful payment
-    const clearCart = async () => {
+    const handlePaymentSuccess = async () => {
       try {
+        // Activate cart for queue processing
         await fetch("/api/cart", {
           method: "POST",
           headers: {
@@ -20,15 +20,17 @@ export default function PaymentSuccessPage() {
           },
           body: JSON.stringify({
             tableId,
-            action: "clear",
+            action: "updateStatus",
+            status: "queue",
+            isActive: true,
           }),
         });
       } catch (error) {
-        console.error("Error clearing cart:", error);
+        console.error("Error handling payment success:", error);
       }
     };
 
-    clearCart();
+    handlePaymentSuccess();
   }, [tableId]);
 
   return (
@@ -49,17 +51,18 @@ export default function PaymentSuccessPage() {
 
         <div className="space-y-3">
           <button
-            onClick={() => router.push(`/tables/${tableId}`)}
-            className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium"
+            onClick={() => router.push(`/tables/${tableId}/orders`)}
+            className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center"
           >
-            Kembali ke Menu
+            <CreditCard className="w-5 h-5 mr-2" />
+            Lihat Status Pesanan
           </button>
 
           <button
-            onClick={() => router.push(`/tables/${tableId}/orders`)}
+            onClick={() => router.push(`/tables/${tableId}`)}
             className="w-full border border-orange-500 text-orange-500 py-3 rounded-lg hover:bg-orange-50 transition-colors font-medium"
           >
-            Lihat Status Pesanan
+            Kembali ke Menu
           </button>
         </div>
       </div>

@@ -1,21 +1,17 @@
 import { ZodError } from "zod";
 import { CustomError } from "../app/types";
-export default function errHandler(payload: unknown) {
-  const error = payload as CustomError;
-  let message = error.message || "Internal Server Error";
-  let status = error.status || 500;
+export default function errHandler(error: any) {
+  console.error("Error:", error);
 
-  if (payload instanceof ZodError) {
-    message = payload.issues[0].message;
-    status = 400;
+  if (error.status) {
+    return Response.json(
+      { error: error.message || "An error occurred" },
+      { status: error.status }
+    );
   }
 
   return Response.json(
-    {
-      message: message,
-    },
-    {
-      status: status,
-    }
+    { error: "Internal server error" },
+    { status: 500 }
   );
 }

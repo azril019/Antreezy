@@ -1,4 +1,5 @@
 import OrderModel from "@/db/models/OrderModel";
+import CartModel from "@/db/models/CartModel";
 
 export async function POST(request: Request) {
   try {
@@ -12,14 +13,25 @@ export async function POST(request: Request) {
     }
 
     // Process the notification data
-    // Here you would typically update your database or perform actions based on the notification
     console.log("Received notification for order:", notificationData.order_id);
-    //Update order status in your database
-
-    await OrderModel.updateOrderStatus(
+    
+    // Update order status in your database
+    const updatedOrder = await OrderModel.updateOrderStatus(
       notificationData.order_id,
       notificationData.transaction_status
     );
+
+    // If payment is successful, activate cart for queue
+    if (notificationData.transaction_status === "settlement" || 
+        notificationData.transaction_status === "capture") {
+      
+      if (updatedOrder) {
+        // Activate cart and set status to queue
+        await CartModel.activateCartForQueue(updatedOrder.tableId);
+        console.log(`Cart activated for table ${updatedOrder.tableId}`);
+      }
+    }
+
     return Response.json(
       {
         success: true,
@@ -29,5 +41,12 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.log("🚀 ~ POST payment notification ~ error:", error);
+    return Response.json(
+      {
+        success: false,
+        message: "Error processing notification",
+      },
+      { status: 500 }
+    );
   }
 }
