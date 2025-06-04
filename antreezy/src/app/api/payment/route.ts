@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log("Request body received");
 
-    const { tableId, items, totalAmount, customerDetails, orderId } = body;
+    const { tableId, items, totalAmount, customerDetails, orderId, paymentType } = body;
 
     // Validate required fields
     if (!tableId || !items || !totalAmount) {
@@ -194,13 +194,15 @@ export async function POST(request: NextRequest) {
     const response = await snap.createTransaction(parameter);
     console.log("✅ Midtrans transaction created successfully");
 
-    // Create order in database with customer details
+    // Create order in database with customer details and payment type
     const orderData: Omit<Order, "_id"> = {
       orderId: finalOrderId,
       tableId,
       items: processedItems,
       totalAmount: grossAmount,
       status: "pending",
+      paymentMethod: paymentType || "qris", // Default to qris if not provided
+      paymentType: paymentType || "qris", // Add payment_type field
       customerDetails: {
         name: customerDetails?.name || `Table-${tableId}`,
         phone: customerDetails?.phone || "",
@@ -214,7 +216,7 @@ export async function POST(request: NextRequest) {
     };
 
     await OrderModel.createOrder(orderData);
-    console.log("✅ Order saved to database with customer details");
+    console.log("✅ Order saved to database with customer details and payment type");
 
     return Response.json({
       success: true,

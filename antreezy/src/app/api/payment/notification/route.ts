@@ -14,20 +14,22 @@ export async function POST(request: Request) {
     // Process the notification data
     console.log("Received notification for order:", notificationData.order_id);
 
-    // Update order status in your database
+    // Extract payment type from notification
+    const paymentType = notificationData.payment_type || "qris";
+
+    // Update order status and payment type in your database
     const updatedOrder = await OrderModel.updateOrderStatus(
       notificationData.order_id,
       notificationData.transaction_status
     );
 
     // If payment is successful, set status to queue and isActive to true
-    if (
-      notificationData.transaction_status === "settlement" ||
-      notificationData.transaction_status === "capture"
-    ) {
+    if (notificationData.transaction_status === "capture") {
       if (updatedOrder && updatedOrder._id) {
-        // Update order status to "queue" and set isActive to true
-        await OrderModel.updateOrderStatus(updatedOrder._id, "queue");
+        await OrderModel.updateOrderStatus(
+          updatedOrder._id.toString(),
+          "queue"
+        );
         console.log(`Order ${updatedOrder._id} status updated to queue`);
       }
     }

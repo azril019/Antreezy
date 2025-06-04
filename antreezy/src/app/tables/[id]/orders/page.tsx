@@ -17,7 +17,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { Review, NewReview } from "@/db/models/ReviewModel";
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from "react-hot-toast";
 
 interface OrderItem {
   id: string;
@@ -31,7 +31,7 @@ interface Order {
   tableId: string;
   items: OrderItem[];
   totalAmount: number;
-  status: "pending" | "queue" | "cooking" | "served" | "done" | "cancelled";
+  status: "pending" | "queue" | "cooking" | "served" | "done";
   customerDetails: {
     name: string;
     phone?: string;
@@ -74,7 +74,9 @@ export default function OrderStatusPage() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [isCancellingOrder, setIsCancellingOrder] = useState<string | null>(null);
+  const [isCancellingOrder, setIsCancellingOrder] = useState<string | null>(
+    null
+  );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
@@ -89,17 +91,6 @@ export default function OrderStatusPage() {
       description: "Pesanan belum dibayar",
       estimateText: "Silakan lakukan pembayaran",
       stepNumber: 1,
-    },
-    paid: {
-      icon: CreditCard,
-      color: "bg-blue-500",
-      textColor: "text-blue-600",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-500",
-      label: "Pembayaran Berhasil",
-      description: "Pesanan akan segera diproses",
-      estimateText: "Pesanan masuk antrian",
-      stepNumber: 2,
     },
     queue: {
       icon: Package,
@@ -145,17 +136,6 @@ export default function OrderStatusPage() {
       estimateText: "Terima kasih",
       stepNumber: 5,
     },
-    cancelled: {
-      icon: XCircle,
-      color: "bg-red-500",
-      textColor: "text-red-600",
-      bgColor: "bg-red-50",
-      borderColor: "border-red-500",
-      label: "Dibatalkan",
-      description: "Pesanan telah dibatalkan",
-      estimateText: "Pesanan dibatalkan",
-      stepNumber: 0,
-    },
   };
 
   const fetchData = async (showRefreshIndicator = false) => {
@@ -196,8 +176,7 @@ export default function OrderStatusPage() {
 
         // Separate active and completed orders
         const activeOrders = allOrders.filter(
-          (order: Order) =>
-            order.status !== "done" && order.status !== "cancelled"
+          (order: Order) => order.status !== "done"
         );
 
         const doneOrders = allOrders.filter(
@@ -331,7 +310,7 @@ export default function OrderStatusPage() {
         await fetchData(false);
         toast.success("Pesanan berhasil diselesaikan!", {
           duration: 3000,
-          position: 'top-center',
+          position: "top-center",
         });
       } else {
         throw new Error("Failed to complete order");
@@ -340,46 +319,10 @@ export default function OrderStatusPage() {
       console.error("Error completing order:", error);
       toast.error("Gagal menyelesaikan pesanan. Silakan coba lagi.", {
         duration: 4000,
-        position: 'top-center',
+        position: "top-center",
       });
     } finally {
       setIsCompletingOrder(null);
-    }
-  };
-
-  const handleCancelOrder = async (orderId: string) => {
-    try {
-      setIsCancellingOrder(orderId);
-
-      const response = await fetch("/api/orders", {
-        method: "PUT", 
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId: orderId,
-          status: "cancelled",
-          isActive: false,
-        }),
-      });
-
-      if (response.ok) {
-        await fetchData(false);
-        toast.success("Pesanan berhasil dibatalkan", {
-          duration: 3000,
-          position: 'top-center',
-        });
-      } else {
-        throw new Error("Failed to cancel order");
-      }
-    } catch (error) {
-      console.error("Error cancelling order:", error);
-      toast.error("Gagal membatalkan pesanan. Silakan coba lagi.", {
-        duration: 4000,
-        position: 'top-center',
-      });
-    } finally {
-      setIsCancellingOrder(null);
     }
   };
 
@@ -404,7 +347,7 @@ export default function OrderStatusPage() {
         await fetchData(false);
         toast.success("Pesanan berhasil dihapus", {
           duration: 3000,
-          position: 'top-center',
+          position: "top-center",
         });
       } else {
         throw new Error("Failed to delete order");
@@ -413,7 +356,7 @@ export default function OrderStatusPage() {
       console.error("Error deleting order:", error);
       toast.error("Gagal menghapus pesanan. Silakan coba lagi.", {
         duration: 4000,
-        position: 'top-center',
+        position: "top-center",
       });
     } finally {
       setIsCancellingOrder(null);
@@ -430,7 +373,7 @@ export default function OrderStatusPage() {
     if (rating === 0) {
       toast.error("Silakan berikan rating untuk pesanan Anda", {
         duration: 3000,
-        position: 'top-center',
+        position: "top-center",
       });
       return;
     }
@@ -461,7 +404,7 @@ export default function OrderStatusPage() {
 
         toast.success("Terima kasih atas review Anda!", {
           duration: 4000,
-          position: 'top-center',
+          position: "top-center",
         });
       } else {
         const errorData = await response.json();
@@ -469,10 +412,13 @@ export default function OrderStatusPage() {
       }
     } catch (error: any) {
       console.error("Error submitting review:", error);
-      toast.error(error.message || "Gagal mengirim review. Silakan coba lagi.", {
-        duration: 4000,
-        position: 'top-center',
-      });
+      toast.error(
+        error.message || "Gagal mengirim review. Silakan coba lagi.",
+        {
+          duration: 4000,
+          position: "top-center",
+        }
+      );
     } finally {
       setIsSubmittingReview(false);
     }
@@ -665,15 +611,16 @@ export default function OrderStatusPage() {
                 <XCircle className="w-8 h-8 text-red-600" />
               </div>
             </div>
-            
+
             <h3 className="text-lg font-semibold text-gray-800 text-center mb-2">
               Batalkan Pesanan?
             </h3>
-            
+
             <p className="text-gray-600 text-center mb-6">
-              Apakah Anda yakin ingin membatalkan pesanan ini? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin membatalkan pesanan ini? Tindakan ini
+              tidak dapat dibatalkan.
             </p>
-            
+
             <div className="space-y-3">
               <button
                 onClick={confirmDeleteOrder}
@@ -692,7 +639,7 @@ export default function OrderStatusPage() {
                   </>
                 )}
               </button>
-              
+
               <button
                 onClick={cancelDeleteOrder}
                 disabled={isCancellingOrder === orderToDelete}
@@ -709,7 +656,6 @@ export default function OrderStatusPage() {
 
   const renderProgressSteps = (currentStatus: string) => {
     const steps = [
-      { key: "paid", label: "Dibayar" },
       { key: "queue", label: "Antrian" },
       { key: "cooking", label: "Dimasak" },
       { key: "served", label: "Siap" },
@@ -786,16 +732,14 @@ export default function OrderStatusPage() {
         } ${isCompleted ? "opacity-75" : ""}`}
       >
         {/* Progress Steps for Active Orders */}
-        {!isCompleted &&
-          order.status !== "pending" &&
-          order.status !== "cancelled" && (
-            <div className="p-4 bg-gray-50 border-b border-gray-200">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">
-                Progress Pesanan
-              </h4>
-              {renderProgressSteps(order.status)}
-            </div>
-          )}
+        {!isCompleted && order.status !== "pending" && (
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">
+              Progress Pesanan
+            </h4>
+            {renderProgressSteps(order.status)}
+          </div>
+        )}
 
         {/* Order Header */}
         <div className={`${status?.bgColor} p-4`}>
@@ -995,7 +939,7 @@ export default function OrderStatusPage() {
                 <CreditCard className="w-5 h-5 mr-2" />
                 Lanjutkan Pembayaran
               </a>
-              
+
               {/* Cancel Order Button */}
               <button
                 onClick={() => handleDeleteOrder(order._id)}
@@ -1032,8 +976,6 @@ export default function OrderStatusPage() {
     switch (status) {
       case "pending":
         return "Menunggu pembayaran";
-      case "paid":
-        return "Pesanan masuk antrian";
       case "queue":
         if (diffInMinutes < 10) {
           return `${10 - diffInMinutes} menit lagi`;
@@ -1048,8 +990,6 @@ export default function OrderStatusPage() {
         return "Siap diambil";
       case "done":
         return "Selesai";
-      case "cancelled":
-        return "Dibatalkan";
       default:
         return `${diffInMinutes} menit yang lalu`;
     }
@@ -1095,7 +1035,7 @@ export default function OrderStatusPage() {
   return (
     <div className="min-h-screen bg-orange-50">
       {/* Toast Container */}
-      <Toaster 
+      <Toaster
         position="top-center"
         reverseOrder={false}
         gutter={8}
@@ -1105,23 +1045,23 @@ export default function OrderStatusPage() {
           // Default options
           duration: 4000,
           style: {
-            background: '#363636',
-            color: '#fff',
+            background: "#363636",
+            color: "#fff",
           },
           // Success
           success: {
             duration: 3000,
             style: {
-              background: '#10B981',
-              color: '#fff',
+              background: "#10B981",
+              color: "#fff",
             },
           },
           // Error
           error: {
             duration: 4000,
             style: {
-              background: '#EF4444',
-              color: '#fff',
+              background: "#EF4444",
+              color: "#fff",
             },
           },
         }}
@@ -1206,7 +1146,7 @@ export default function OrderStatusPage() {
 
       {/* Review Modal */}
       {ReviewModal}
-      
+
       {/* Delete Confirmation Modal */}
       {DeleteConfirmModal}
     </div>

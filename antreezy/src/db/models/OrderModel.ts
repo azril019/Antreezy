@@ -14,18 +14,9 @@ export interface Order {
     quantity: number;
   }>;
   totalAmount: number;
-  status:
-    | "pending"
-    | "paid"
-    | "failed"
-    | "cancelled"
-    | "settlement"
-    | "capture"
-    | "queue"
-    | "cooking"
-    | "served"
-    | "done";
+  status: "pending" | "capture" | "queue" | "cooking" | "served" | "done";
   paymentMethod?: string;
+  paymentType?: "qris" | "cash" | "bank_transfer" | "credit_card" | "e_wallet"; // Add payment_type field
   customerDetails: {
     name: string;
     phone?: string;
@@ -91,10 +82,7 @@ export default class OrderModel {
   static async getCompletedOrders(): Promise<Order[]> {
     const orders = await this.collection()
       .find({
-        $or: [
-          { isActive: false },
-          { status: { $in: ["done"] } },
-        ],
+        $or: [{ isActive: false }, { status: { $in: ["done"] } }],
       })
       .sort({ updatedAt: -1 }) // Newest completed first
       .toArray();
@@ -131,9 +119,7 @@ export default class OrderModel {
         {
           $set: {
             status: status,
-            isActive: !["served", "done", "settlement", "capture"].includes(
-              status
-            ),
+            isActive: !["served", "done", "capture"].includes(status),
             updatedAt: new Date().toISOString(),
           },
         },
