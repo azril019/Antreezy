@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, ChefHat, Eye, EyeOff, Loader2 } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import Image from "next/image";
 
@@ -42,8 +42,10 @@ export default function AdminLogin() {
       if (data.accessToken) {
         localStorage.setItem("adminSession", data.accessToken);
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to login. Please try again.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || "Failed to login. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

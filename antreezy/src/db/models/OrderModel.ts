@@ -1,3 +1,4 @@
+import { items } from "@/app/types";
 import { db } from "../config/mongodb";
 import { ObjectId } from "mongodb";
 
@@ -6,12 +7,7 @@ export interface Order {
   orderId: string;
   tableId: string;
   tableNumber: string;
-  items: Array<{
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-  }>;
+  items: items[];
   totalAmount: number;
   status: "pending" | "capture" | "queue" | "cooking" | "served" | "done";
   paymentMethod?: string;

@@ -99,3 +99,10 @@ export interface TableDB extends NewTable {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface items {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}

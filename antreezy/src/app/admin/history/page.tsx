@@ -12,6 +12,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import { Order } from "@/db/models/OrderModel";
+import { items } from "@/app/types";
 
 interface OrderHistory {
   _id: string;
@@ -93,15 +95,15 @@ export default function TransactionHistoryPage() {
 
         // Filter hanya status "done"
         const doneOrders = orders
-          .filter((order: any) => order?.status === "done")
-          .map((order: any) => ({
-            _id: order._id || order.id || "",
-            orderId: order.orderId || order._id || order.id || "",
+          .filter((order: Order) => order?.status === "done")
+          .map((order: OrderHistory) => ({
+            _id: order._id || "",
+            orderId: order.orderId || order._id || "",
             tableId: order.tableId || "Unknown",
             tableNumber: order.tableNumber || "Unknown",
             items: Array.isArray(order.items)
-              ? order.items.map((item: any) => ({
-                  id: item.id || item._id || "",
+              ? order.items.map((item: items) => ({
+                  id: item.id || "",
                   name: item.name || "Unknown Item",
                   price: Number(item.price) || 0,
                   quantity: Number(item.quantity) || 0,
@@ -110,10 +112,8 @@ export default function TransactionHistoryPage() {
             totalAmount: Number(order.totalAmount) || 0,
             customerDetails: {
               name: order.customerDetails?.name || "Unknown Customer",
-              email: order.customerDetails?.email || "",
               phone: order.customerDetails?.phone || "",
             },
-            status: order.status || "unknown",
             paymentMethod: order.paymentMethod || "Unknown",
             createdAt: order.createdAt || new Date().toISOString(),
             updatedAt: order.updatedAt || new Date().toISOString(),
@@ -126,8 +126,8 @@ export default function TransactionHistoryPage() {
         calculateStats(doneOrders);
         setLastUpdated(new Date());
       }
-    } catch (error: any) {
-      if (error.name !== "AbortError") {
+    } catch (error: unknown) {
+      if (error instanceof Error) {
         console.error("Error fetching transactions:", error);
         if (showRefreshIndicator) {
           toast.error("Gagal memuat riwayat transaksi. Silakan coba lagi.");
@@ -298,6 +298,7 @@ export default function TransactionHistoryPage() {
         minute: "2-digit",
       });
     } catch (error) {
+      console.error("Error formatting date:", error);
       return "Invalid Date";
     }
   };
@@ -320,7 +321,7 @@ export default function TransactionHistoryPage() {
     ];
     const csvData = filteredTransactions.map((transaction) => [
       transaction.orderId || "",
-      `Meja ${transaction.tableId || ""}`,
+      `Meja ${transaction.tableNumber || ""}`,
       transaction.customerDetails?.name || "",
       transaction.paymentMethod === "cash"
         ? "Tunai"
