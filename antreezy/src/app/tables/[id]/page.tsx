@@ -97,7 +97,7 @@ export default function TablePage() {
   // Load cart from API on component mount
   const fetchCart = async () => {
     try {
-      const response = await fetch(`/api/cart?tableId=${tableId}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart?tableId=${tableId}`);
       if (response.ok) {
         const cartData = await response.json();
         // Ensure cartData is an array
@@ -120,7 +120,7 @@ export default function TablePage() {
   // Function to fetch restaurant data by ID, with fallback to first restaurant
   const fetchRestaurantData = async () => {
     try {
-      let response = await fetch("/api/restaurant");
+      let response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
@@ -142,7 +142,7 @@ export default function TablePage() {
   // Function to fetch menu items
   const fetchMenuItems = async () => {
     try {
-      const response = await fetch("/api/menus");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/menus`);
       if (!response.ok) {
         throw new Error(`Failed to fetch menus: ${response.statusText}`);
       }
@@ -155,7 +155,7 @@ export default function TablePage() {
 
   const fetchTableData = async () => {
     try {
-      const response = await fetch(`/api/tables/${tableId}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch table: ${response.statusText}`);

@@ -43,7 +43,7 @@ const TableManagement = () => {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/tables");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables`);
       if (!response.ok) {
         throw new Error("Failed to fetch tables");
       }
@@ -120,11 +120,11 @@ const TableManagement = () => {
     setIsProcessing(true);
 
     try {
-      let url = "/api/tables";
+      let url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables`;
       let method = "POST";
 
       if (currentTable) {
-        url = `/api/tables/${currentTable.id}`;
+        url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${currentTable.id}`;
         method = "PUT";
       }
 
@@ -215,7 +215,7 @@ const TableManagement = () => {
 
   const confirmDelete = async (tableId: string) => {
     const deletePromise = async () => {
-      const response = await fetch(`/api/tables/${tableId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`, {
         method: "DELETE",
       });
 

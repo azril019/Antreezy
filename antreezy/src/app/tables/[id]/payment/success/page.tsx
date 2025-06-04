@@ -13,7 +13,7 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     const clearCartAfterSuccess = async () => {
       try {
-        await fetch("/api/cart", {
+        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

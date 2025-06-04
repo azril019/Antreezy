@@ -87,7 +87,7 @@ export default function TransactionHistoryPage() {
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      const response = await fetch("/api/orders?status=done", { signal });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders?status=done`, { signal });
 
       // Check if request was aborted before checking response
       if (signal.aborted) {

@@ -67,7 +67,7 @@ export default function AdminSidebar({
     setMounted(true);
     const fetchProfile = async () => {
       try {
-        const res = await fetch("/api/profile");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/profile`);
         if (!res.ok) throw new Error("Unauthorized");
         const data = await res.json();
         setUser({

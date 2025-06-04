@@ -143,7 +143,7 @@ export default function MenuFormModal({
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      const response = await fetch("/api/upload", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/upload`, {
         method: "POST",
         body: formData,
       });

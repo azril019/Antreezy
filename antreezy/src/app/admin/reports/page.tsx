@@ -54,7 +54,7 @@ export default function ReportsPage() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/reviews");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews`);
       if (!response.ok) {
         throw new Error("Failed to fetch reviews");
       }
@@ -142,7 +142,7 @@ export default function ReportsPage() {
       setIsLoading(true);
       setError("");
 
-      const response = await fetch(`/api/reviews/${reviewId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews/${reviewId}`, {
         method: "DELETE",
       });
 
@@ -201,8 +201,8 @@ export default function ReportsPage() {
 
     try {
       const url = currentReview
-        ? `/api/reviews/${currentReview.id}`
-        : "/api/reviews";
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews/${currentReview.id}`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews`;
       const method = currentReview ? "PUT" : "POST";
 
       const response = await fetch(url, {

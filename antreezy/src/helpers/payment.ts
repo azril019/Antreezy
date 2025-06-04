@@ -31,7 +31,7 @@ export const createPayment = async (
       totalAmount: paymentData.totalAmount,
     });
 
-    const response = await fetch("/api/payment", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/payment`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

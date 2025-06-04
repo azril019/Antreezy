@@ -106,9 +106,9 @@ export default function AdminDashboard() {
       const signal = abortControllerRef.current.signal;
 
       // Fetch orders
-      const ordersRes = await fetch("/api/orders", { signal });
-      const completedOrdersRes = await fetch("/api/orders?status=done");
-      const tablesRes = await fetch("/api/tables", { signal });
+      const ordersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`, { signal });
+      const completedOrdersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders?status=done`);
+      const tablesRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables`, { signal });
 
       if (
         !signal.aborted &&
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("/api/profile");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/profile`);
         if (!res.ok) throw new Error("Unauthorized");
         const data = await res.json();
         setUser({
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
     try {
       console.log("Updating order:", orderId, "to status:", newStatus);
 
-      const response = await fetch("/api/orders", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
