@@ -75,8 +75,8 @@ export default function TransactionHistoryPage() {
     try {
       if (showRefreshIndicator) setIsRefreshing(true);
 
-      // Cancel previous request
-      if (abortControllerRef.current) {
+      // Cancel previous request only if it exists and is not already aborted
+      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
         abortControllerRef.current.abort();
       }
 
@@ -85,48 +85,63 @@ export default function TransactionHistoryPage() {
       const signal = abortControllerRef.current.signal;
 
       const response = await fetch("/api/orders?status=done", { signal });
-      if (!response.ok && !signal.aborted) {
+      
+      // Check if request was aborted before checking response
+      if (signal.aborted) {
+        return; // Exit early if aborted
+      }
+      
+      if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      if (!signal.aborted) {
-        const data = await response.json();
-        const orders = Array.isArray(data) ? data : [];
+      const data = await response.json();
+      const orders = Array.isArray(data) ? data : [];
 
-        // Filter hanya status "done"
-        const doneOrders = orders
-          .filter((order: Order) => order?.status === "done")
-          .map((order: OrderHistory) => ({
-            _id: order._id || "",
-            orderId: order.orderId || order._id || "",
-            tableId: order.tableId || "Unknown",
-            tableNumber: order.tableNumber || "Unknown",
-            items: Array.isArray(order.items)
-              ? order.items.map((item: items) => ({
-                  id: item.id || "",
-                  name: item.name || "Unknown Item",
-                  price: Number(item.price) || 0,
-                  quantity: Number(item.quantity) || 0,
-                }))
-              : [],
-            totalAmount: Number(order.totalAmount) || 0,
-            customerDetails: {
-              name: order.customerDetails?.name || "Unknown Customer",
-              phone: order.customerDetails?.phone || "",
-            },
-            paymentMethod: order.paymentMethod || "Unknown",
-            createdAt: order.createdAt || new Date().toISOString(),
-            updatedAt: order.updatedAt || new Date().toISOString(),
-            completedAt:
-              order.completedAt || order.updatedAt || new Date().toISOString(),
-          }));
-
-        setTransactions(doneOrders);
-        setFilteredTransactions(doneOrders);
-        calculateStats(doneOrders);
-        setLastUpdated(new Date());
+      // Check again if request was aborted before processing data
+      if (signal.aborted) {
+        return;
       }
+
+      // Filter hanya status "done"
+      const doneOrders = orders
+        .filter((order: Order) => order?.status === "done")
+        .map((order: OrderHistory) => ({
+          _id: order._id || "",
+          orderId: order.orderId || order._id || "",
+          tableId: order.tableId || "Unknown",
+          tableNumber: order.tableNumber || "Unknown",
+          items: Array.isArray(order.items)
+            ? order.items.map((item: items) => ({
+                id: item.id || "",
+                name: item.name || "Unknown Item",
+                price: Number(item.price) || 0,
+                quantity: Number(item.quantity) || 0,
+              }))
+            : [],
+          totalAmount: Number(order.totalAmount) || 0,
+          customerDetails: {
+            name: order.customerDetails?.name || "Unknown Customer",
+            phone: order.customerDetails?.phone || "",
+          },
+          paymentMethod: order.paymentMethod || "Unknown",
+          createdAt: order.createdAt || new Date().toISOString(),
+          updatedAt: order.updatedAt || new Date().toISOString(),
+          completedAt:
+            order.completedAt || order.updatedAt || new Date().toISOString(),
+        }));
+
+      setTransactions(doneOrders);
+      setFilteredTransactions(doneOrders);
+      calculateStats(doneOrders);
+      setLastUpdated(new Date());
     } catch (error: unknown) {
+      // Check if error is due to abort
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Request was aborted');
+        return; // Don't show error for aborted requests
+      }
+      
       if (error instanceof Error) {
         console.error("Error fetching transactions:", error);
         if (showRefreshIndicator) {
@@ -320,7 +335,7 @@ export default function TransactionHistoryPage() {
       "Tanggal",
     ];
     const csvData = filteredTransactions.map((transaction) => [
-      transaction.orderId || "",
+      transaction.orderId || "".slice(-6).toUpperCase(),
       `Meja ${transaction.tableNumber || ""}`,
       transaction.customerDetails?.name || "",
       transaction.paymentMethod === "cash"
@@ -328,7 +343,7 @@ export default function TransactionHistoryPage() {
         : transaction.paymentMethod === "qris"
         ? "QRIS"
         : transaction.paymentMethod || "Unknown",
-      transaction.totalAmount || 0,
+      transaction.totalAmount.toLocaleString("id-ID") || 0,
       formatDate(transaction.createdAt),
     ]);
     const csvContent = [headers, ...csvData]
