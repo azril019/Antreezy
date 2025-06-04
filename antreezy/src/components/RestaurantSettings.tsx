@@ -88,7 +88,7 @@ const RestaurantSettings: React.FC<RestaurantSettingsProps> = ({
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("/api/upload", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/upload`, {
       method: "POST",
       body: formData,
     });

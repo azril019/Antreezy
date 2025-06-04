@@ -23,7 +23,7 @@ export default function UserManagementPage() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/users");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/users`);
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
@@ -95,7 +95,7 @@ export default function UserManagementPage() {
       setIsLoading(true);
       setError("");
 
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/users/${userId}`, {
         method: "DELETE",
       });
 
@@ -156,7 +156,7 @@ export default function UserManagementPage() {
 
       // If we have a currentUser, we're updating
       if (currentUser) {
-        url = `/api/users/${currentUser.id}`;
+        url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/users/${currentUser.id}`;
         method = "PUT";
       }
 

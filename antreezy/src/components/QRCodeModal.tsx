@@ -57,7 +57,7 @@ export default function QRCodeModal({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/tables/${table.id}/qr`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`);
 
       if (response.ok) {
         const result = await response.json();
@@ -77,7 +77,7 @@ export default function QRCodeModal({
 
     setIsGenerating(true);
     try {
-      const response = await fetch(`/api/tables/${table.id}/qr`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -119,7 +119,7 @@ export default function QRCodeModal({
     if (!table || !qrData) return;
 
     try {
-      const response = await fetch(`/api/tables/${table.id}/qr`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`, {
         method: "DELETE",
       });
 

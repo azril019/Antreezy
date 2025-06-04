@@ -152,7 +152,7 @@ export default function OrderStatusPage() {
       const signal = abortControllerRef.current.signal;
 
       // Fetch orders for this table from orders collection
-      const ordersRes = await fetch(`/api/orders?tableId=${tableId}`, {
+      const ordersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders?tableId=${tableId}`, {
         signal,
       });
 
@@ -206,7 +206,7 @@ export default function OrderStatusPage() {
 
         // Fetch table info (only on first load)
         if (!table) {
-          const tableRes = await fetch(`/api/tables/${tableId}`, { signal });
+          const tableRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`, { signal });
           if (!tableRes.ok && !signal.aborted) {
             throw new Error("Failed to fetch table info");
           }
@@ -292,7 +292,7 @@ export default function OrderStatusPage() {
     try {
       setIsCompletingOrder(orderId);
 
-      const response = await fetch("/api/orders", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -338,7 +338,7 @@ export default function OrderStatusPage() {
       setIsCancellingOrder(orderToDelete);
       setShowDeleteConfirm(false);
 
-      const response = await fetch(`/api/orders/${orderToDelete}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders/${orderToDelete}`, {
         method: "DELETE",
       });
 
@@ -388,7 +388,7 @@ export default function OrderStatusPage() {
         tableId,
       };
 
-      const response = await fetch("/api/reviews", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     const response = await snap.createTransaction(parameter);
     console.log("✅ Midtrans transaction created successfully");
 
-    const resTable = await fetch("http://localhost:3000/api/tables/" + tableId);
+    const resTable = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/` + tableId);
     const tableData = await resTable.json();
 
     // Create order in database with customer details and payment type

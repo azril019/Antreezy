@@ -14,7 +14,7 @@ const RestaurantSettingsPage: React.FC = () => {
     const fetchRestaurantData = async () => {
       try {
         setIsInitialLoading(true);
-        const response = await fetch("/api/restaurant");
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`);
         if (response.ok) {
           const data = await response.json();
           console.log("Fetched restaurant data:", data[0]);
@@ -40,14 +40,14 @@ const RestaurantSettingsPage: React.FC = () => {
 
       if (restaurant?.id) {
         // Update existing restaurant
-        response = await fetch(`/api/restaurant/${restaurant.id}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant/${restaurant.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(restaurantData),
         });
       } else {
         // Create new restaurant
-        response = await fetch(`/api/restaurant`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(restaurantData),

@@ -44,7 +44,7 @@ export default function MenuManagementPage() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/menus");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/menus`);
       if (!response.ok) {
         throw new Error("Failed to fetch menu items");
       }
@@ -189,7 +189,7 @@ export default function MenuManagementPage() {
       setIsLoading(true);
       setError("");
 
-      const response = await fetch(`/api/menus/${menuId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/menus/${menuId}`, {
         method: "DELETE",
       });
 
@@ -245,10 +245,10 @@ export default function MenuManagementPage() {
     setIsLoading(true);
 
     try {
-      let url = "/api/menus";
+      let url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/menus`;
       let method = "POST";
       if (currentMenuItem) {
-        url = `/api/menus/${currentMenuItem.id}`;
+        url = `${process.env.NEXT_PUBLIC_BASE_URL}/api/menus/${currentMenuItem.id}`;
         method = "PUT";
       }
 
