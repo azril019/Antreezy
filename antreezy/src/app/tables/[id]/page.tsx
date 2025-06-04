@@ -495,46 +495,92 @@ export default function TablePage() {
           </h3>
 
           {reviews.length > 0 ? (
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="bg-white rounded-xl p-4 shadow-sm"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-gray-600"></span>
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-1 mt-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < review.rating
-                                  ? "fill-yellow-400 text-yellow-400"
-                                  : "text-gray-300"
-                              }`}
-                            />
-                          ))}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {/* Table Header */}
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <div className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="col-span-2">Rating</div>
+                  <div className="col-span-6">Komentar</div>
+                  <div className="col-span-2">Tanggal</div>
+                </div>
+              </div>
+
+              {/* Scrollable Table Body */}
+              <div className="max-h-96 overflow-y-auto">
+                <div className="divide-y divide-gray-200">
+                  {reviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="px-4 py-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="grid grid-cols-12 gap-4 items-center">
+                        {/* Rating Column */}
+                        <div className="col-span-2">
+                          <div className="flex items-center space-x-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < review.rating
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            {review.rating}/5
+                          </div>
+                        </div>
+
+                        {/* Comment Column */}
+                        <div className="col-span-6">
+                          <p className="text-gray-700 text-sm leading-relaxed">
+                            {review.comment || (
+                              <span className="text-gray-400 italic">
+                                Tidak ada komentar
+                              </span>
+                            )}
+                          </p>
+                        </div>
+
+                        {/* Date Column */}
+                        <div className="col-span-2">
+                          <span className="text-xs text-gray-500">
+                            {new Date(review.createdAt).toLocaleDateString(
+                              "id-ID",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <span className="text-xs text-gray-500">
-                      {new Date(review.createdAt).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  <p className="text-gray-700">
-                    {review.comment || "Tidak ada komentar"}
-                  </p>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Table Footer */}
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">
+                    Menampilkan {reviews.length} review
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-medium text-gray-700">
+                        {averageRating}
+                      </span>
+                      <span className="text-sm text-gray-500">rata-rata</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="bg-white rounded-xl p-8 shadow-sm text-center">
@@ -641,22 +687,6 @@ export default function TablePage() {
               )}
             </div>
           </div>
-        </div>
-        {/* Quick Actions - tambahkan button untuk melihat status pesanan */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <button
-            onClick={() => router.push(`/tables/${tableId}/menu`)}
-            className="flex items-center justify-center p-4 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
-          >
-            <span className="text-lg font-semibold">🍽️ Lihat Menu</span>
-          </button>
-
-          <button
-            onClick={() => router.push(`/tables/${tableId}/orders`)}
-            className="flex items-center justify-center p-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
-          >
-            <span className="text-lg font-semibold">📋 Status Pesanan</span>
-          </button>
         </div>
       </main>
     </div>
