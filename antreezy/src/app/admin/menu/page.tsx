@@ -147,7 +147,8 @@ export default function MenuManagementPage() {
             <p className="font-medium text-gray-900">Hapus Menu</p>
             <p className="text-sm text-gray-600">
               Yakin ingin menghapus{" "}
-              <span className="font-semibold">"{menuItem.name}"</span>?
+              <span className="font-semibold">&quot;{menuItem.name}&quot;</span>
+              ?
             </p>
           </div>
           <div className="flex space-x-2">
@@ -240,7 +241,7 @@ export default function MenuManagementPage() {
     setIsModalOpen(true);
   };
 
-  const handleModalSubmit = async (menuData: any) => {
+  const handleModalSubmit = async (menuData: unknown) => {
     setIsLoading(true);
 
     try {
@@ -276,6 +277,7 @@ export default function MenuManagementPage() {
           : "Menu berhasil ditambahkan"
       );
     } catch (err) {
+      console.error("Error submitting menu item:", err);
       toast.error(
         currentMenuItem ? "Gagal memperbarui menu" : "Gagal menambahkan menu"
       );

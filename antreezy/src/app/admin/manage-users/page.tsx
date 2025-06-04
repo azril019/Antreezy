@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import UserFormModal from "@/components/UserformModal";
 
@@ -30,7 +29,8 @@ export default function UserManagementPage() {
       }
       const data = await response.json();
       setUsers(data.users || []);
-    } catch (err) {
+    } catch (error) {
+      console.error("Error fetching users:", error);
       toast.error("Failed to fetch users");
     } finally {
       setIsLoading(false);
@@ -50,7 +50,8 @@ export default function UserManagementPage() {
             <p className="font-medium text-gray-900">Hapus User</p>
             <p className="text-sm text-gray-600">
               Yakin ingin menghapus user{" "}
-              <span className="font-semibold">"{user.username}"</span>?
+              <span className="font-semibold">&quot;{user.username}&quot;</span>
+              ?
             </p>
             <p className="text-xs text-gray-500 mt-1">
               Role: {user.role === "admin" ? "Admin" : "Staff"}
@@ -146,7 +147,7 @@ export default function UserManagementPage() {
     setIsModalOpen(true);
   };
 
-  const handleModalSubmit = async (userData: any) => {
+  const handleModalSubmit = async (userData: unknown) => {
     setIsLoading(true);
 
     try {
@@ -183,7 +184,8 @@ export default function UserManagementPage() {
       toast.success(
         currentUser ? "User berhasil diperbarui" : "User berhasil ditambahkan"
       );
-    } catch (err) {
+    } catch (error) {
+      console.error("Error submitting user form:", error);
       toast.error(
         currentUser ? "Gagal memperbarui user" : "Gagal menambahkan user"
       );

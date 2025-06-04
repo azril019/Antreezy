@@ -7,13 +7,12 @@ import {
   QrCode,
   Edit,
   Trash2,
-  Filter,
   Users,
   CheckCircle,
   XCircle,
   Clock,
 } from "lucide-react";
-import { Table } from "@/app/types";
+import { NewTable, Table } from "@/app/types";
 import TableFormModal from "@/components/TableFormModal";
 import QRCodeModal from "@/components/QRCodeModal";
 import toast, { Toaster } from "react-hot-toast";
@@ -25,7 +24,6 @@ const TableManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("Semua Status");
   const [locationFilter, setLocationFilter] = useState("Semua Lokasi");
-  const [viewMode, setViewMode] = useState("Table");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
@@ -118,7 +116,7 @@ const TableManagement = () => {
   };
 
   // Handle modal submit (create or update)
-  const handleModalSubmit = async (tableData: any) => {
+  const handleModalSubmit = async (tableData: NewTable) => {
     setIsProcessing(true);
 
     try {
@@ -159,10 +157,10 @@ const TableManagement = () => {
           ? "Meja berhasil diperbarui!"
           : "Meja berhasil ditambahkan!"
       );
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error submitting table:", err);
       toast.error(
-        err.message ||
+        (err as Error).message ||
           (currentTable ? "Gagal memperbarui meja" : "Gagal menambahkan meja")
       );
     } finally {
