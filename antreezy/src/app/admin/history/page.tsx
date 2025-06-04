@@ -3,16 +3,11 @@
 import React, { useState, useEffect } from "react";
 import {
   Search,
-  Filter,
-  Calendar,
   Download,
   Eye,
   TrendingUp,
   DollarSign,
   ShoppingBag,
-  Users,
-  ChevronDown,
-  Clock,
   CheckCircle,
   XCircle,
 } from "lucide-react";
@@ -33,7 +28,7 @@ interface OrderHistory {
     name: string;
     phone?: string;
   };
-  status: "settlement" | "capture" | "failed" | "cancelled";
+  status: string;
   paymentMethod: string;
   createdAt: string;
   updatedAt: string;
@@ -50,9 +45,7 @@ interface TransactionStats {
 
 export default function TransactionHistoryPage() {
   const [transactions, setTransactions] = useState<OrderHistory[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<
-    OrderHistory[]
-  >([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<OrderHistory[]>([]);
   const [stats, setStats] = useState<TransactionStats>({
     totalTransactions: 0,
     totalRevenue: 0,
@@ -64,31 +57,24 @@ export default function TransactionHistoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<OrderHistory | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<OrderHistory | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Fetch transaction history with better error handling
+  // Fetch hanya status "done"
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/orders?status=completed");
+      const response = await fetch("/api/orders");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
-      console.log("Fetched data:", data);
-
+      console.log("API DATA:", data);
       const orders = Array.isArray(data) ? data : [];
 
-      const completedOrders = orders
-        .filter((order: any) => {
-          const hasValidStatus =
-            order?.status && ["settlement", "capture"].includes(order.status);
-          const hasCustomerDetails = order?.customerDetails?.name;
-          return hasValidStatus && hasCustomerDetails;
-        })
+      // Filter hanya status "done"
+      const doneOrders = orders
+        .filter((order: any) => order?.status === "done")
         .map((order: any) => ({
           _id: order._id || order.id || "",
           orderId: order.orderId || order._id || order.id || "",
@@ -110,15 +96,14 @@ export default function TransactionHistoryPage() {
           paymentMethod: order.paymentMethod || "Unknown",
           createdAt: order.createdAt || new Date().toISOString(),
           updatedAt: order.updatedAt || new Date().toISOString(),
-          completedAt:
-            order.completedAt || order.updatedAt || new Date().toISOString(),
+          completedAt: order.completedAt || order.updatedAt || new Date().toISOString(),
         }));
+        console.log("Fetched transactions:", doneOrders);
 
-      setTransactions(completedOrders);
-      setFilteredTransactions(completedOrders);
-      calculateStats(completedOrders);
+      setTransactions(doneOrders);
+      setFilteredTransactions(doneOrders);
+      calculateStats(doneOrders);
     } catch (error) {
-      console.error("Error fetching transactions:", error);
       toast.error("Gagal memuat riwayat transaksi. Silakan coba lagi.");
       setTransactions([]);
       setFilteredTransactions([]);
@@ -127,6 +112,7 @@ export default function TransactionHistoryPage() {
     }
   };
 
+  // Statistik hanya status "done"
   const calculateStats = (orders: OrderHistory[]) => {
     if (!Array.isArray(orders) || orders.length === 0) {
       setStats({
@@ -138,30 +124,18 @@ export default function TransactionHistoryPage() {
       });
       return;
     }
-
     const totalTransactions = orders.length;
-    const totalRevenue = orders.reduce((sum, order) => {
-      const amount = Number(order.totalAmount) || 0;
-      return sum + amount;
-    }, 0);
-
-    const totalItems = orders.reduce((sum, order) => {
-      if (!Array.isArray(order.items)) return sum;
-      return (
+    const totalRevenue = orders.reduce((sum, order) => sum + (Number(order.totalAmount) || 0), 0);
+    const totalItems = orders.reduce(
+      (sum, order) =>
         sum +
-        order.items.reduce((itemSum, item) => {
-          const quantity = Number(item.quantity) || 0;
-          return itemSum + quantity;
-        }, 0)
-      );
-    }, 0);
-
-    const successfulTransactions = orders.filter((order) =>
-      ["settlement", "capture"].includes(order.status)
-    ).length;
-
-    const averageOrderValue =
-      totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+        (Array.isArray(order.items)
+          ? order.items.reduce((itemSum, item) => itemSum + (Number(item.quantity) || 0), 0)
+          : 0),
+      0
+    );
+    const successfulTransactions = orders.length; // semua "done"
+    const averageOrderValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
     setStats({
       totalTransactions,
@@ -174,18 +148,13 @@ export default function TransactionHistoryPage() {
 
   useEffect(() => {
     if (!Array.isArray(transactions)) return;
-
     let filtered = [...transactions];
-
     if (searchTerm && searchTerm.trim()) {
       filtered = filtered.filter((transaction) => {
         const searchLower = searchTerm.toLowerCase();
         const orderId = (transaction.orderId || "").toLowerCase();
-        const customerName = (
-          transaction.customerDetails?.name || ""
-        ).toLowerCase();
+        const customerName = (transaction.customerDetails?.name || "").toLowerCase();
         const tableId = (transaction.tableId || "").toString().toLowerCase();
-
         return (
           orderId.includes(searchLower) ||
           customerName.includes(searchLower) ||
@@ -193,17 +162,12 @@ export default function TransactionHistoryPage() {
         );
       });
     }
-
     if (statusFilter !== "all") {
-      filtered = filtered.filter(
-        (transaction) => transaction.status === statusFilter
-      );
+      filtered = filtered.filter((transaction) => transaction.status === statusFilter);
     }
-
     if (dateFilter !== "all") {
       const now = new Date();
       const filterDate = new Date();
-
       switch (dateFilter) {
         case "today":
           filterDate.setHours(0, 0, 0, 0);
@@ -217,7 +181,6 @@ export default function TransactionHistoryPage() {
         default:
           break;
       }
-
       if (dateFilter !== "all") {
         filtered = filtered.filter((transaction) => {
           const transactionDate = new Date(transaction.createdAt);
@@ -225,7 +188,6 @@ export default function TransactionHistoryPage() {
         });
       }
     }
-
     setFilteredTransactions(filtered);
     calculateStats(filtered);
   }, [transactions, searchTerm, statusFilter, dateFilter]);
@@ -258,15 +220,10 @@ export default function TransactionHistoryPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      settlement: {
+      done: {
         color: "bg-green-100 text-green-800",
         icon: CheckCircle,
-        label: "Berhasil",
-      },
-      capture: {
-        color: "bg-green-100 text-green-800",
-        icon: CheckCircle,
-        label: "Berhasil",
+        label: "Selesai",
       },
       failed: {
         color: "bg-red-100 text-red-800",
@@ -279,15 +236,10 @@ export default function TransactionHistoryPage() {
         label: "Dibatalkan",
       },
     };
-
-    const config =
-      statusConfig[status as keyof typeof statusConfig] || statusConfig.failed;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.failed;
     const Icon = config.icon;
-
     return (
-      <span
-        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
-      >
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </span>
@@ -295,14 +247,10 @@ export default function TransactionHistoryPage() {
   };
 
   const exportToCSV = () => {
-    if (
-      !Array.isArray(filteredTransactions) ||
-      filteredTransactions.length === 0
-    ) {
+    if (!Array.isArray(filteredTransactions) || filteredTransactions.length === 0) {
       toast.error("Tidak ada data untuk diekspor");
       return;
     }
-
     const headers = [
       "ID Pesanan",
       "Meja",
@@ -319,23 +267,18 @@ export default function TransactionHistoryPage() {
       transaction.status || "",
       formatDate(transaction.createdAt),
     ]);
-
     const csvContent = [headers, ...csvData]
       .map((row) => row.map((field) => `"${field}"`).join(","))
       .join("\n");
-
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `riwayat-transaksi-${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
+    a.download = `riwayat-transaksi-${new Date().toISOString().split("T")[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-
     toast.success("Data berhasil diekspor!");
   };
 
@@ -415,7 +358,7 @@ export default function TransactionHistoryPage() {
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Transaksi Berhasil</p>
+                <p className="text-sm text-gray-600">Transaksi Selesai</p>
                 <p className="text-2xl font-bold text-orange-600">
                   {stats.successfulTransactions}
                 </p>
@@ -454,10 +397,7 @@ export default function TransactionHistoryPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="all">Semua Status</option>
-                <option value="settlement">Berhasil</option>
-                <option value="capture">Berhasil</option>
-                <option value="failed">Gagal</option>
-                <option value="cancelled">Dibatalkan</option>
+                <option value="done">Selesai</option>
               </select>
 
               <select
