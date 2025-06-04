@@ -67,10 +67,21 @@ export default function CartPage() {
       const response = await fetch(`/api/cart?tableId=${tableId}`);
       if (response.ok) {
         const cartData = await response.json();
-        setCart(cartData);
+        console.log("Cart data received:", cartData);
+        
+        // Handle array response
+        if (Array.isArray(cartData)) {
+          const cartItems = cartData.length > 0 && cartData[0]?.items ? cartData[0].items : [];
+          setCart(cartItems);
+        } else if (cartData?.items) {
+          setCart(cartData.items);
+        } else {
+          setCart([]);
+        }
       }
     } catch (error) {
       console.error("Error fetching cart:", error);
+      setCart([]);
     }
   };
 
@@ -85,7 +96,7 @@ export default function CartPage() {
       const tableData = await response.json();
       console.log("Fetched table data:", tableData);
 
-      setTable(tableData.data);
+      setTable(tableData.data || tableData);
       return tableData;
     } catch (err) {
       console.error("Error fetching table:", err);
@@ -124,8 +135,14 @@ export default function CartPage() {
   const handleBackToTable = () => {
     router.push(`/tables/${tableId}`);
   };
+
   const updateQuantity = async (itemId: string, newQuantity: number) => {
     try {
+      if (newQuantity <= 0) {
+        await removeFromCart(itemId);
+        return;
+      }
+
       const response = await fetch("/api/cart", {
         method: "POST",
         headers: {
@@ -133,7 +150,7 @@ export default function CartPage() {
         },
         body: JSON.stringify({
           tableId,
-          action: "update",
+          action: "updateQuantity",
           itemId,
           quantity: newQuantity,
         }),
@@ -141,7 +158,12 @@ export default function CartPage() {
 
       if (response.ok) {
         const updatedCart = await response.json();
-        setCart(updatedCart);
+        // Handle response properly
+        if (updatedCart?.items) {
+          setCart(updatedCart.items);
+        } else {
+          await fetchCart(); // Refetch if response format is unclear
+        }
       } else {
         console.error("Failed to update cart quantity");
       }
@@ -166,7 +188,12 @@ export default function CartPage() {
 
       if (response.ok) {
         const updatedCart = await response.json();
-        setCart(updatedCart);
+        // Handle response properly
+        if (updatedCart?.items) {
+          setCart(updatedCart.items);
+        } else {
+          await fetchCart(); // Refetch if response format is unclear
+        }
       } else {
         console.error("Failed to remove item from cart");
       }
@@ -189,8 +216,7 @@ export default function CartPage() {
       });
 
       if (response.ok) {
-        const updatedCart = await response.json();
-        setCart(updatedCart);
+        setCart([]);
       } else {
         console.error("Failed to clear cart");
       }
@@ -199,13 +225,19 @@ export default function CartPage() {
     }
   };
 
-  // Calculate totals
+  // Calculate totals with safety checks
   const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+    return cart.reduce((total, item) => {
+      return total + (item?.quantity || 0);
+    }, 0);
   };
 
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cart.reduce((total, item) => {
+      const price = item?.price || 0;
+      const quantity = item?.quantity || 0;
+      return total + (price * quantity);
+    }, 0);
   };
 
   // Calculate nutritional totals
@@ -216,17 +248,18 @@ export default function CartPage() {
     let totalFat = 0;
 
     cart.forEach((item) => {
-      if (item.nutritionalInfo) {
+      if (item?.nutritionalInfo) {
         const {
           calories = 0,
           protein = 0,
           carbs = 0,
           fat = 0,
         } = item.nutritionalInfo;
-        totalCalories += calories * item.quantity;
-        totalProtein += protein * item.quantity;
-        totalCarbs += carbs * item.quantity;
-        totalFat += fat * item.quantity;
+        const quantity = item?.quantity || 0;
+        totalCalories += calories * quantity;
+        totalProtein += protein * quantity;
+        totalCarbs += carbs * quantity;
+        totalFat += fat * quantity;
       }
     });
 
@@ -254,7 +287,9 @@ export default function CartPage() {
     try {
       // Calculate subtotal from cart items
       const subtotal = cart.reduce((total, item) => {
-        return total + item.price * item.quantity;
+        const price = item?.price || 0;
+        const quantity = item?.quantity || 0;
+        return total + (price * quantity);
       }, 0);
 
       // Calculate tax (11%)
@@ -274,10 +309,10 @@ export default function CartPage() {
       const paymentData = {
         tableId,
         items: cart.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: Math.round(item.price), // Ensure integer
-          quantity: item.quantity,
+          id: item?.id || '',
+          name: item?.name || '',
+          price: Math.round(item?.price || 0), // Ensure integer
+          quantity: item?.quantity || 0,
         })),
         totalAmount,
         customerDetails: {
@@ -356,6 +391,8 @@ export default function CartPage() {
   }
 
   const nutritionInfo = calculateTotalNutrition();
+  const totalPrice = getTotalPrice();
+  const totalItems = getTotalItems();
 
   return (
     <div className="min-h-screen bg-orange-50">
@@ -393,7 +430,7 @@ export default function CartPage() {
                 <h1 className="font-bold text-gray-800 text-lg leading-tight">
                   Keranjang
                 </h1>
-                <p className="text-sm text-gray-500">Meja #{table?.nomor}</p>
+                <p className="text-sm text-gray-500">Meja #{table?.nomor || 'Unknown'}</p>
               </div>
             </div>
           </div>
@@ -416,71 +453,74 @@ export default function CartPage() {
           <>
             {/* Cart Items */}
             <div className="space-y-4 mb-6">
-              {cart.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-xl p-4 shadow-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-800 mb-1">
-                        {item.name}
-                      </h4>
-                      <p className="text-orange-600 font-bold">
-                        Rp {item.price.toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      {/* Quantity Controls */}
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity - 1)
-                          }
-                          className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
-                        >
-                          <Minus className="w-4 h-4 text-gray-600" />
-                        </button>
-
-                        <span className="w-8 text-center font-semibold text-gray-800">
-                          {item.quantity}
-                        </span>
-
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity + 1)
-                          }
-                          className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors"
-                        >
-                          <Plus className="w-4 h-4 text-white" />
-                        </button>
+              {cart.map((item) => {
+                const itemPrice = item?.price || 0;
+                const itemQuantity = item?.quantity || 0;
+                
+                return (
+                  <div
+                    key={item?.id || Math.random()}
+                    className="bg-white rounded-xl p-4 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-800 mb-1">
+                          {item?.name || 'Unknown Item'}
+                        </h4>
+                        <p className="text-orange-600 font-bold">
+                          Rp {itemPrice.toLocaleString('id-ID')}
+                        </p>
                       </div>
 
-                      {/* Remove Button */}
-                      <button
-                        onClick={() => removeFromCart(item.id)}
-                        className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    </div>
-                  </div>
+                      <div className="flex items-center space-x-3">
+                        {/* Quantity Controls */}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() =>
+                              updateQuantity(item?.id || '', itemQuantity - 1)
+                            }
+                            className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+                          >
+                            <Minus className="w-4 h-4 text-gray-600" />
+                          </button>
 
-                  {/* Item Total */}
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Subtotal</span>
-                      <span className="font-semibold text-gray-800">
-                        Rp {(item.price * item.quantity).toLocaleString()}
-                      </span>
+                          <span className="w-8 text-center font-semibold text-gray-800">
+                            {itemQuantity}
+                          </span>
+
+                          <button
+                            onClick={() =>
+                              updateQuantity(item?.id || '', itemQuantity + 1)
+                            }
+                            className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors"
+                          >
+                            <Plus className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+
+                        {/* Remove Button */}
+                        <button
+                          onClick={() => removeFromCart(item?.id || '')}
+                          className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center hover:bg-red-200 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Item Total */}
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Subtotal</span>
+                        <span className="font-semibold text-gray-800">
+                          Rp {(itemPrice * itemQuantity).toLocaleString('id-ID')}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-
-            {/* Order Summary */}
 
             {/* Nutrition Info Card */}
             <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
@@ -522,6 +562,8 @@ export default function CartPage() {
                 </div>
               </div>
             </div>
+
+            {/* Order Summary */}
             <div className="bg-white rounded-xl p-4 shadow-sm mb-6">
               <h3 className="font-semibold text-gray-800 mb-3">
                 Ringkasan Pesanan
@@ -530,20 +572,20 @@ export default function CartPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Item</span>
-                  <span className="text-gray-800">{getTotalItems()} item</span>
+                  <span className="text-gray-800">{totalItems} item</span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
                   <span className="text-gray-800">
-                    Rp {getTotalPrice().toLocaleString()}
+                    Rp {totalPrice.toLocaleString('id-ID')}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Pajak(11%)</span>
                   <span className="text-gray-800">
-                    Rp {Math.round(getTotalPrice() * 0.11).toLocaleString()}
+                    Rp {Math.round(totalPrice * 0.11).toLocaleString('id-ID')}
                   </span>
                 </div>
 
@@ -551,7 +593,7 @@ export default function CartPage() {
                   <div className="flex justify-between">
                     <span className="font-semibold text-gray-800">Total</span>
                     <span className="font-bold text-lg text-orange-600">
-                      Rp {Math.round(getTotalPrice() * 1.1).toLocaleString()}
+                      Rp {Math.round(totalPrice * 1.11).toLocaleString('id-ID')}
                     </span>
                   </div>
                 </div>
@@ -581,6 +623,7 @@ export default function CartPage() {
             </button>
           </div>
         )}
+        
         {/* Checkout Button */}
         {cart.length > 0 && (
           <button

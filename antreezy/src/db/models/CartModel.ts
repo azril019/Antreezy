@@ -16,14 +16,19 @@ interface CartItem {
   nutritionalInfo?: NutritionalInfo;
 }
 
-interface Cart {
-  _id?: ObjectId;
+export interface Cart {
+  _id?: string;
   tableId: string;
-  items: CartItem[];
-  isActive: boolean; // New field
-  status: string | null; // New field
-  updatedAt: string;
+  items: Array<{
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }>;
+  status: "pending" | "queue" | "cooking" | "served" | "done" | "cancelled";
+  isActive: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export default class CartModel {
@@ -31,12 +36,9 @@ export default class CartModel {
     return db.collection("carts");
   }
 
-  static async getCartByTableId(tableId: string): Promise<CartItem[]> {
+  static async getCartByTableId(tableId: string): Promise<any> {
     const cart = await this.collection().findOne({ tableId });
-
-    if (!cart) return [];
-
-    return cart.items;
+    return cart;
   }
 
   static async addToCart(tableId: string, item: any): Promise<CartItem[]> {
@@ -108,11 +110,46 @@ export default class CartModel {
     }
   }
 
-  static async getActiveCarts(): Promise<Cart[]> {
-    return (await this.collection()
-      .find({ isActive: true })
+  static async updateCartStatus(
+    tableId: string,
+    status: string,
+    isActive?: boolean
+  ): Promise<any> {
+    const updateData: any = {
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (isActive !== undefined) {
+      updateData.isActive = isActive;
+    }
+
+    // If status is done, automatically set isActive to false
+    if (status === "done") {
+      updateData.isActive = false;
+    }
+
+    const result = await this.collection().findOneAndUpdate(
+      { tableId },
+      { $set: updateData },
+      { returnDocument: "after" }
+    );
+
+    return result;
+  }
+
+  static async getActiveCarts(): Promise<any[]> {
+    const carts = await this.collection()
+      .find({
+        $and: [
+          { items: { $exists: true } },
+          { items: { $ne: [] } },
+        ],
+      })
       .sort({ updatedAt: -1 })
-      .toArray()) as Cart[];
+      .toArray();
+
+    return carts;
   }
 
   static async updateCartItem(
@@ -188,25 +225,64 @@ export default class CartModel {
     return [];
   }
 
-  static async updateCartStatus(
-    tableId: string,
-    status: string,
-    isActive: boolean
-  ): Promise<CartItem[]> {
-    const result = await this.collection().updateOne(
+  static async activateCartForQueue(tableId: string): Promise<void> {
+    await this.collection().updateOne(
       { tableId },
       {
         $set: {
-          status,
-          isActive,
+          status: "queue",
+          isActive: true,
           updatedAt: new Date().toISOString(),
         },
-      },
-      { upsert: true }
+      }
+    );
+  }
+
+  static async removeFromCart(
+    tableId: string,
+    itemId: string
+  ): Promise<CartItem[]> {
+    const cart = await this.collection().findOne({ tableId });
+    if (!cart) return [];
+    cart.items = cart.items.filter((item: CartItem) => item.id !== itemId);
+    await this.collection().updateOne(
+      { tableId },
+      {
+        $set: {
+          items: cart.items,
+          updatedAt: new Date().toISOString(),
+        },
+      }
     );
 
-    // Fetch and return updated cart
+    return cart.items;
+  }
+
+  static async updateQuantity(
+    tableId: string,
+    itemId: string,
+    quantity: number
+  ): Promise<CartItem[]> {
     const cart = await this.collection().findOne({ tableId });
-    return cart ? cart.items : [];
+    if (!cart) return [];
+
+    const itemIndex = cart.items.findIndex(
+      (item: CartItem) => item.id === itemId
+    );
+    if (itemIndex >= 0) {
+      cart.items[itemIndex].quantity = quantity;
+    }
+
+    await this.collection().updateOne(
+      { tableId },
+      {
+        $set: {
+          items: cart.items,
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    );
+
+    return cart.items;
   }
 }

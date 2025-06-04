@@ -304,13 +304,11 @@ export default function MenuPage() {
         {/* Menu Items List */}
         {filteredMenuItems.length > 0 ? (
           <div className="space-y-4">
-            {" "}
             {filteredMenuItems.map((item) => (
               <div
                 key={item.id}
                 className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200"
               >
-                {" "}
                 <div className="flex flex-col">
                   {/* Item Name */}
                   <h4 className="font-semibold text-gray-800 text-lg mb-2">
@@ -423,7 +421,7 @@ export default function MenuPage() {
               </div>
               <div className="text-right">
                 <p className="font-bold text-lg">
-                  Rp{" "}
+                  Rp
                   {cart
                     .reduce(
                       (total, item) => total + item.price * item.quantity,

@@ -612,6 +612,23 @@ export default function TablePage() {
             </div>
           </div>
         </div>
+
+        {/* Quick Actions - tambahkan button untuk melihat status pesanan */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <button
+            onClick={() => router.push(`/tables/${tableId}/menu`)}
+            className="flex items-center justify-center p-4 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors"
+          >
+            <span className="text-lg font-semibold">🍽️ Lihat Menu</span>
+          </button>
+
+          <button
+            onClick={() => router.push(`/tables/${tableId}/orders`)}
+            className="flex items-center justify-center p-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+          >
+            <span className="text-lg font-semibold">📋 Status Pesanan</span>
+          </button>
+        </div>
       </main>
     </div>
   );
