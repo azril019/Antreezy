@@ -76,7 +76,10 @@ export default function TransactionHistoryPage() {
       if (showRefreshIndicator) setIsRefreshing(true);
 
       // Cancel previous request only if it exists and is not already aborted
-      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+      if (
+        abortControllerRef.current &&
+        !abortControllerRef.current.signal.aborted
+      ) {
         abortControllerRef.current.abort();
       }
 
@@ -85,12 +88,12 @@ export default function TransactionHistoryPage() {
       const signal = abortControllerRef.current.signal;
 
       const response = await fetch("/api/orders?status=done", { signal });
-      
+
       // Check if request was aborted before checking response
       if (signal.aborted) {
         return; // Exit early if aborted
       }
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -137,11 +140,11 @@ export default function TransactionHistoryPage() {
       setLastUpdated(new Date());
     } catch (error: unknown) {
       // Check if error is due to abort
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.log('Request was aborted');
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log("Request was aborted");
         return; // Don't show error for aborted requests
       }
-      
+
       if (error instanceof Error) {
         console.error("Error fetching transactions:", error);
         if (showRefreshIndicator) {
@@ -335,7 +338,7 @@ export default function TransactionHistoryPage() {
       "Tanggal",
     ];
     const csvData = filteredTransactions.map((transaction) => [
-      transaction.orderId || "".slice(-6).toUpperCase(),
+      transaction.orderId.slice(-6).toUpperCase(),
       `Meja ${transaction.tableNumber || ""}`,
       transaction.customerDetails?.name || "",
       transaction.paymentMethod === "cash"
