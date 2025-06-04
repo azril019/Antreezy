@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {useState, useEffect} from "react";
 import {
   LayoutDashboard,
   ChefHat,
@@ -12,7 +12,7 @@ import {
   LogOut,
   MapPin,
 } from "lucide-react";
-import { handleLogout } from "@/actions";
+import {handleLogout} from "@/actions";
 import Image from "next/image";
 
 interface AdminSidebarProps {
@@ -21,7 +21,7 @@ interface AdminSidebarProps {
 }
 
 const navigationItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  {title: "Dashboard", url: "/admin", icon: LayoutDashboard},
   {
     title: "Manajemen Menu",
     url: "/admin/menu",
@@ -34,11 +34,11 @@ const navigationItems = [
     icon: MapPin,
     restrictedFrom: ["staff"],
   },
-  { title: "Riwayat Transaksi", url: "/admin/history", icon: History },
+  {title: "Riwayat Transaksi", url: "/admin/history", icon: History},
 ];
 
 const managementItems = [
-  { title: "Laporan", url: "/admin/reports", icon: BarChart3 },
+  {title: "Laporan", url: "/admin/reports", icon: BarChart3},
   {
     title: "Pengaturan",
     url: "/admin/settings",
@@ -59,7 +59,7 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const [notifications] = useState(3);
   const [mounted, setMounted] = useState(false);
-  const [user, setUser] = useState<{ username: string; role: string } | null>(
+  const [user, setUser] = useState<{username: string; role: string} | null>(
     null
   );
 
@@ -147,8 +147,7 @@ export default function AdminSidebar({
                     currentPath === item.url
                       ? "bg-orange-100 text-orange-600 font-semibold"
                       : "hover:bg-orange-50 text-gray-700"
-                  }`}
-                >
+                  }`}>
                   <item.icon className="w-4 h-4" />
                   {item.title}
                 </a>
@@ -172,8 +171,7 @@ export default function AdminSidebar({
                     currentPath === item.url
                       ? "bg-orange-100 text-orange-600 font-semibold"
                       : "hover:bg-orange-50 text-gray-700"
-                  }`}
-                >
+                  }`}>
                   <item.icon className="w-4 h-4" />
                   {item.title}
                 </a>
@@ -197,8 +195,7 @@ export default function AdminSidebar({
           <button
             onClick={handleLogout}
             className="ml-2 p-2 rounded hover:bg-orange-100 text-gray-600 hover:text-orange-600 transition"
-            title="Keluar"
-          >
+            title="Keluar">
             <LogOut className="w-4 h-4" />
           </button>
         </div>

@@ -62,7 +62,7 @@ interface MenuItem {
   price: number;
   stock: number;
   status: "tersedia" | "habis";
-  image?: string; // Added image field
+  image?: string;
   createdAt?: string;
   updatedAt?: string;
   nutritionalInfo?: {
@@ -173,7 +173,7 @@ export default function TablePage() {
   // Add function to fetch reviews
   const fetchReviews = async () => {
     try {
-      const response = await fetch(`/api/reviews?tableId=${tableId}`);
+      const response = await fetch(`/api/reviews`);
       if (response.ok) {
         const reviewsData = await response.json();
         setReviews(reviewsData);
@@ -492,14 +492,9 @@ export default function TablePage() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-gray-600">
-                          A
-                        </span>
+                        <span className="text-sm font-semibold text-gray-600"></span>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-800">
-                          Pelanggan Anonim
-                        </h4>
                         <div className="flex items-center space-x-1 mt-1">
                           {[...Array(5)].map((_, i) => (
                             <Star

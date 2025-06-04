@@ -135,15 +135,22 @@ export default class ReviewModel {
   }
 
   static async getReviewById(id: string): Promise<Review | null> {
-    const review = await this.collection().findOne({_id: new ObjectId(id)});
+    try {
+      const result = await this.collection().findOne({
+        _id: new ObjectId(id),
+      });
 
-    if (!review) return null;
+      if (!result) return null;
 
-    return {
-      ...review,
-      id: review._id?.toString() || "",
-      _id: undefined,
-    };
+      return {
+        ...result,
+        id: result._id?.toString() || "",
+        _id: undefined,
+      };
+    } catch (error) {
+      console.error("Error getting review by ID:", error);
+      throw error;
+    }
   }
 
   static async getAverageRating(): Promise<number> {
