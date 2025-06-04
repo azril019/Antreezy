@@ -93,7 +93,7 @@ export default class OrderModel {
       .find({
         $or: [
           { isActive: false },
-          { status: { $in: ["done", "settlement", "capture"] } },
+          { status: { $in: ["done"] } },
         ],
       })
       .sort({ updatedAt: -1 }) // Newest completed first
