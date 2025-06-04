@@ -46,10 +46,11 @@ interface MenuCategory {
 
 interface Review {
   id: string;
-  customerName: string;
+  orderId: string;
+  tableId: string;
   rating: number;
   comment: string;
-  timeAgo: string;
+  createdAt: string;
 }
 
 interface MenuItem {
@@ -91,6 +92,9 @@ export default function TablePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [averageRating, setAverageRating] = useState<number>(0);
+
   // Load cart from API on component mount
   const fetchCart = async () => {
     try {
@@ -166,6 +170,33 @@ export default function TablePage() {
     }
   };
 
+  // Add function to fetch reviews
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch(`/api/reviews?tableId=${tableId}`);
+      if (response.ok) {
+        const reviewsData = await response.json();
+        setReviews(reviewsData);
+
+        // Calculate average rating from fetched reviews
+        if (reviewsData.length > 0) {
+          const totalRating = reviewsData.reduce(
+            (sum: number, review: Review) => sum + review.rating,
+            0
+          );
+          const avgRating = totalRating / reviewsData.length;
+          setAverageRating(Math.round(avgRating * 10) / 10);
+        } else {
+          setAverageRating(0);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      setReviews([]);
+      setAverageRating(0);
+    }
+  };
+
   // Calculate menu categories from actual menu items
   const getMenuCategories = (): MenuCategory[] => {
     const categoryCounts = menuItems.reduce((acc, item) => {
@@ -207,36 +238,13 @@ export default function TablePage() {
   };
   const menuCategories = getMenuCategories();
 
-  // Calculate statistics from real data
+  // Update stats to use real data
   const stats = {
-    rating: 4.8, // This could come from a reviews API in the future
+    rating: averageRating || 0,
     totalMenus: menuItems.length,
-    totalReviews: 150, // This could come from a reviews API in the future
+    totalReviews: reviews.length,
   };
 
-  const reviews: Review[] = [
-    {
-      id: "1",
-      customerName: "Ahmad Rizki",
-      rating: 5,
-      comment: "Makanannya enak banget! Pelayanan cepat dan ramah.",
-      timeAgo: "2 jam lalu",
-    },
-    {
-      id: "2",
-      customerName: "Sari Dewi",
-      rating: 4,
-      comment: "Nasi gorengnya recommended, porsi besar dan harga terjangkau.",
-      timeAgo: "5 jam lalu",
-    },
-    {
-      id: "3",
-      customerName: "Budi Santoso",
-      rating: 5,
-      comment: "Suasana nyaman, cocok untuk makan bersama keluarga.",
-      timeAgo: "1 hari lalu",
-    },
-  ];
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -247,6 +255,7 @@ export default function TablePage() {
           fetchTableData(),
           fetchRestaurantData(),
           fetchMenuItems(),
+          fetchReviews(), // Add this
         ]);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -475,48 +484,67 @@ export default function TablePage() {
         {/* Reviews Section */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-800 mb-4">
-            Review Pelanggan
+            Review Pelanggan ({reviews.length})
           </h3>
 
-          <div className="space-y-4">
-            {reviews.map((review) => (
-              <div
-                key={review.id}
-                className="bg-white rounded-xl p-4 shadow-sm"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-gray-600">
-                        {review.customerName.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800">
-                        {review.customerName}
-                      </h4>
-                      <div className="flex items-center space-x-1 mt-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
+          {reviews.length > 0 ? (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="bg-white rounded-xl p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-semibold text-gray-600">
+                          A
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-800">
+                          Pelanggan Anonim
+                        </h4>
+                        <div className="flex items-center space-x-1 mt-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < review.rating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
+                    <span className="text-xs text-gray-500">
+                      {new Date(review.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500">
-                    {review.timeAgo}
-                  </span>
+                  <p className="text-gray-700">
+                    {review.comment || "Tidak ada komentar"}
+                  </p>
                 </div>
-                <p className="text-gray-700">{review.comment}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+              <div className="text-gray-400 text-4xl mb-4">💬</div>
+              <h4 className="font-semibold text-gray-800 mb-2">
+                Belum Ada Review
+              </h4>
+              <p className="text-gray-500">
+                Jadilah yang pertama memberikan review untuk restoran ini!
+              </p>
+            </div>
+          )}
         </div>
         {/* About Restaurant */}
         <div className="mb-8">
