@@ -63,8 +63,7 @@ export default class CartModel {
             },
           },
         ],
-        isActive: false, // Added at the cart level
-        status: null, // Added at the cart level
+        // Remove isActive and status from cart level
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -110,41 +109,12 @@ export default class CartModel {
     }
   }
 
-  static async updateCartStatus(
-    tableId: string,
-    status: string,
-    isActive?: boolean
-  ): Promise<any> {
-    const updateData: any = {
-      status,
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (isActive !== undefined) {
-      updateData.isActive = isActive;
-    }
-
-    // If status is done, automatically set isActive to false
-    if (status === "done") {
-      updateData.isActive = false;
-    }
-
-    const result = await this.collection().findOneAndUpdate(
-      { tableId },
-      { $set: updateData },
-      { returnDocument: "after" }
-    );
-
-    return result;
-  }
+  // Remove updateCartStatus method as it's no longer needed
 
   static async getActiveCarts(): Promise<any[]> {
     const carts = await this.collection()
       .find({
-        $and: [
-          { items: { $exists: true } },
-          { items: { $ne: [] } },
-        ],
+        $and: [{ items: { $exists: true } }, { items: { $ne: [] } }],
       })
       .sort({ updatedAt: -1 })
       .toArray();
@@ -223,66 +193,5 @@ export default class CartModel {
     );
 
     return [];
-  }
-
-  static async activateCartForQueue(tableId: string): Promise<void> {
-    await this.collection().updateOne(
-      { tableId },
-      {
-        $set: {
-          status: "queue",
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        },
-      }
-    );
-  }
-
-  static async removeFromCart(
-    tableId: string,
-    itemId: string
-  ): Promise<CartItem[]> {
-    const cart = await this.collection().findOne({ tableId });
-    if (!cart) return [];
-    cart.items = cart.items.filter((item: CartItem) => item.id !== itemId);
-    await this.collection().updateOne(
-      { tableId },
-      {
-        $set: {
-          items: cart.items,
-          updatedAt: new Date().toISOString(),
-        },
-      }
-    );
-
-    return cart.items;
-  }
-
-  static async updateQuantity(
-    tableId: string,
-    itemId: string,
-    quantity: number
-  ): Promise<CartItem[]> {
-    const cart = await this.collection().findOne({ tableId });
-    if (!cart) return [];
-
-    const itemIndex = cart.items.findIndex(
-      (item: CartItem) => item.id === itemId
-    );
-    if (itemIndex >= 0) {
-      cart.items[itemIndex].quantity = quantity;
-    }
-
-    await this.collection().updateOne(
-      { tableId },
-      {
-        $set: {
-          items: cart.items,
-          updatedAt: new Date().toISOString(),
-        },
-      }
-    );
-
-    return cart.items;
   }
 }

@@ -54,20 +54,38 @@ export default function MenuPage() {
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]); // Ensure initial state is array
   const [table, setTable] = useState<NewTable | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Load cart from API on component mount
+  const [addingToCart, setAddingToCart] = useState<string | null>(null); // Track which item is being added
+
+  // Load cart from API on component mount with safety checks
   const fetchCart = async () => {
     try {
       const response = await fetch(`/api/cart?tableId=${tableId}`);
       if (response.ok) {
         const cartData = await response.json();
-        setCart(cartData);
+        console.log("Cart data received:", cartData); // Debug log
+
+        // Handle different response formats
+        if (Array.isArray(cartData)) {
+          setCart(cartData);
+        } else if (cartData && Array.isArray(cartData.items)) {
+          setCart(cartData.items);
+        } else if (cartData && Array.isArray(cartData.data)) {
+          setCart(cartData.data);
+        } else {
+          console.warn("Cart data is not in expected format:", cartData);
+          setCart([]);
+        }
+      } else {
+        console.warn("Cart fetch failed with status:", response.status);
+        setCart([]);
       }
     } catch (error) {
       console.error("Error fetching cart:", error);
+      setCart([]);
     }
   };
 
@@ -140,9 +158,20 @@ export default function MenuPage() {
       (item) => item.category === category && item.status === "tersedia"
     );
   };
-  // Handle add to cart
+  // Enhanced add to cart with loading state
   const handleAddToCart = async (menuItem: MenuItem) => {
+    setAddingToCart(menuItem.id); // Set loading state
+
     try {
+      console.log("Adding item to cart:", {
+        tableId,
+        menuItem: {
+          id: menuItem.id,
+          name: menuItem.name,
+          price: menuItem.price,
+        },
+      });
+
       const response = await fetch("/api/cart", {
         method: "POST",
         headers: {
@@ -155,24 +184,71 @@ export default function MenuPage() {
             id: menuItem.id,
             name: menuItem.name,
             price: menuItem.price,
+            quantity: 1,
           },
         }),
       });
 
       if (response.ok) {
         const updatedCart = await response.json();
-        setCart(updatedCart);
+
+        // Handle different response formats
+        if (Array.isArray(updatedCart)) {
+          setCart(updatedCart);
+        } else if (updatedCart && Array.isArray(updatedCart.items)) {
+          setCart(updatedCart.items);
+        } else if (updatedCart && Array.isArray(updatedCart.data)) {
+          setCart(updatedCart.data);
+        } else {
+          await fetchCart();
+        }
       } else {
-        console.error("Failed to add item to cart");
+        const errorData = await response.text();
+        console.error("Cart API error:", errorData);
+        alert(`Failed to add ${menuItem.name} to cart. Please try again.`);
       }
     } catch (error) {
       console.error("Error adding item to cart:", error);
+      alert(`Could not add ${menuItem.name} to cart. Please check your connection.`);
+    } finally {
+      setAddingToCart(null); // Clear loading state
     }
   };
 
-  // Calculate total cart items
+  // Calculate total cart items with safety checks
   const getTotalCartItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+    if (!cart || !Array.isArray(cart)) {
+      console.warn("Cart is not an array:", cart);
+      return 0;
+    }
+
+    try {
+      return cart.reduce((total, item) => {
+        const quantity = typeof item?.quantity === "number" ? item.quantity : 0;
+        return total + quantity;
+      }, 0);
+    } catch (error) {
+      console.error("Error calculating cart total:", error);
+      return 0;
+    }
+  };
+
+  // Calculate total cart price with safety checks
+  const getTotalCartPrice = () => {
+    if (!cart || !Array.isArray(cart)) {
+      return 0;
+    }
+
+    try {
+      return cart.reduce((total, item) => {
+        const price = typeof item?.price === "number" ? item.price : 0;
+        const quantity = typeof item?.quantity === "number" ? item.quantity : 0;
+        return total + price * quantity;
+      }, 0);
+    } catch (error) {
+      console.error("Error calculating cart price:", error);
+      return 0;
+    }
   };
 
   // Navigate back to table page
@@ -371,10 +447,24 @@ export default function MenuPage() {
                     </span>
                     <button
                       onClick={() => handleAddToCart(item)}
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+                      disabled={addingToCart === item.id}
+                      className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
+                        addingToCart === item.id
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-orange-500 hover:bg-orange-600"
+                      } text-white`}
                     >
-                      <Plus className="w-4 h-4" />
-                      <span className="font-medium">Tambah</span>
+                      {addingToCart === item.id ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span className="font-medium">Adding...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4" />
+                          <span className="font-medium">Tambah</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -421,13 +511,7 @@ export default function MenuPage() {
               </div>
               <div className="text-right">
                 <p className="font-bold text-lg">
-                  Rp
-                  {cart
-                    .reduce(
-                      (total, item) => total + item.price * item.quantity,
-                      0
-                    )
-                    .toLocaleString()}
+                  Rp {getTotalCartPrice().toLocaleString()}
                 </p>
               </div>
             </button>

@@ -1,4 +1,4 @@
-import OrderModel from "@/db/models/OrderModel";
+import OrderModel, { Order } from "@/db/models/OrderModel";
 import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -146,7 +146,6 @@ export async function POST(request: NextRequest) {
       item_details: itemsWithTax,
       customer_details: {
         first_name: customerDetails?.name || `Table-${tableId}`,
-        email: customerDetails?.email || `table${tableId}@restaurant.com`,
         phone: customerDetails?.phone || "08123456789",
         billing_address: {
           first_name: customerDetails?.name || `Table-${tableId}`,
@@ -192,28 +191,35 @@ export async function POST(request: NextRequest) {
     console.log("Items total verification:", calculatedTotal);
 
     // Create transaction token
-    const transaction = await snap.createTransaction(parameter);
-    // save to data base order
-    await OrderModel.createOrder({
+    const response = await snap.createTransaction(parameter);
+    console.log("✅ Midtrans transaction created successfully");
+
+    // Create order in database with customer details
+    const orderData: Omit<Order, "_id"> = {
       orderId: finalOrderId,
-      tableId: tableId,
+      tableId,
       items: processedItems,
-      totalAmount: parameter.transaction_details.gross_amount,
+      totalAmount: grossAmount,
       status: "pending",
-      paymentMethod: "midtrans",
+      customerDetails: {
+        name: customerDetails?.name || `Table-${tableId}`,
+        phone: customerDetails?.phone || "",
+      },
       midtrans: {
-        token: transaction.token,
-        redirect_url: transaction.redirect_url,
+        token: response.token,
+        redirect_url: response.redirect_url,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    });
-    console.log("Transaction created successfully");
+    };
+
+    await OrderModel.createOrder(orderData);
+    console.log("✅ Order saved to database with customer details");
 
     return Response.json({
       success: true,
-      token: transaction.token,
-      redirect_url: transaction.redirect_url,
+      token: response.token,
+      redirect_url: response.redirect_url,
       order_id: finalOrderId,
       amount: parameter.transaction_details.gross_amount,
     });
