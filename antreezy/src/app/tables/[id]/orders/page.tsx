@@ -1,7 +1,7 @@
 "use client";
 
 import {useParams, useRouter} from "next/navigation";
-import {useEffect, useState, useRef} from "react";
+import {useEffect, useState, useRef, useCallback, useMemo} from "react";
 import {
   ArrowLeft,
   Clock,
@@ -274,7 +274,7 @@ export default function OrderStatusPage() {
     }
   };
 
-  const handleSubmitReview = async () => {
+  const handleSubmitReview = useCallback(async () => {
     if (rating === 0) {
       alert("Silakan berikan rating untuk pesanan Anda");
       return;
@@ -317,25 +317,34 @@ export default function OrderStatusPage() {
     } finally {
       setIsSubmittingReview(false);
     }
-  };
+  }, [rating, reviewOrderId, comment, tableId]);
 
-  const handleSkipReview = () => {
+  const handleSkipReview = useCallback(() => {
     setShowReviewModal(false);
     setReviewOrderId(null);
     setRating(0);
     setComment("");
-  };
+  }, []);
 
-  const renderStarRating = () => {
+  const handleRatingClick = useCallback((star: number) => {
+    setRating(star);
+  }, []);
+
+  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setComment(e.target.value);
+  }, []);
+
+  const renderStarRating = useCallback(() => {
     return (
       <div className="flex justify-center space-x-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
-            onClick={() => setRating(star)}
+            type="button"
+            onClick={() => handleRatingClick(star)}
             className={`p-1 transition-colors ${
               star <= rating ? "text-yellow-400" : "text-gray-300"
-            } hover:text-yellow-400`}>
+            } hover:text-yellow-400 focus:outline-none`}>
             <Star
               className={`w-8 h-8 ${star <= rating ? "fill-current" : ""}`}
             />
@@ -343,9 +352,9 @@ export default function OrderStatusPage() {
         ))}
       </div>
     );
-  };
+  }, [rating, handleRatingClick]);
 
-  const ReviewModal = () => {
+  const ReviewModal = useMemo(() => {
     if (!showReviewModal) return null;
 
     return (
@@ -368,8 +377,9 @@ export default function OrderStatusPage() {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={handleSkipReview}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"
                 disabled={isSubmittingReview}>
                 <X className="w-5 h-5 text-gray-500" />
               </button>
@@ -378,82 +388,93 @@ export default function OrderStatusPage() {
 
           {/* Modal Content */}
           <div className="p-6">
-            {/* Rating Section */}
-            <div className="text-center mb-6">
-              <h4 className="text-base font-medium text-gray-800 mb-3">
-                Berikan Rating Anda
-              </h4>
-              {renderStarRating()}
-              <div className="mt-2">
-                {rating > 0 && (
-                  <p className="text-sm text-gray-600">
-                    {rating === 1 && "Sangat Buruk"}
-                    {rating === 2 && "Buruk"}
-                    {rating === 3 && "Cukup"}
-                    {rating === 4 && "Baik"}
-                    {rating === 5 && "Sangat Baik"}
-                  </p>
-                )}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmitReview();
+            }}>
+              {/* Rating Section */}
+              <div className="text-center mb-6">
+                <h4 className="text-base font-medium text-gray-800 mb-3">
+                  Berikan Rating Anda
+                </h4>
+                {renderStarRating()}
+                <div className="mt-2">
+                  {rating > 0 && (
+                    <p className="text-sm text-gray-600">
+                      {rating === 1 && "Sangat Buruk"}
+                      {rating === 2 && "Buruk"}
+                      {rating === 3 && "Cukup"}
+                      {rating === 4 && "Baik"}
+                      {rating === 5 && "Sangat Baik"}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Comment Section */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Komentar (Opsional)
-              </label>
-              <div className="relative">
-                <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="Ceritakan pengalaman Anda..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
-                  rows={4}
-                  maxLength={500}
+              {/* Comment Section */}
+              <div className="mb-6">
+                <label 
+                  htmlFor="review-comment" 
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Komentar (Opsional)
+                </label>
+                <div className="relative">
+                  <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-gray-400 pointer-events-none" />
+                  <textarea
+                    id="review-comment"
+                    name="comment"
+                    value={comment}
+                    onChange={handleCommentChange}
+                    placeholder="Ceritakan pengalaman Anda..."
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none transition-colors"
+                    rows={4}
+                    maxLength={500}
+                    disabled={isSubmittingReview}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {comment.length}/500 karakter
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview || rating === 0}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  {isSubmittingReview ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Mengirim Review...
+                    </>
+                  ) : (
+                    <>
+                      <Star className="w-5 h-5 mr-2" />
+                      Kirim Review
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSkipReview}
                   disabled={isSubmittingReview}
-                />
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                  Lewati untuk Sekarang
+                </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {comment.length}/500 karakter
+
+              <p className="text-xs text-gray-500 text-center mt-4">
+                Review Anda akan membantu meningkatkan kualitas layanan kami
               </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <button
-                onClick={handleSubmitReview}
-                disabled={isSubmittingReview || rating === 0}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
-                {isSubmittingReview ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Mengirim Review...
-                  </>
-                ) : (
-                  <>
-                    <Star className="w-5 h-5 mr-2" />
-                    Kirim Review
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={handleSkipReview}
-                disabled={isSubmittingReview}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50">
-                Lewati untuk Sekarang
-              </button>
-            </div>
-
-            <p className="text-xs text-gray-500 text-center mt-4">
-              Review Anda akan membantu meningkatkan kualitas layanan kami
-            </p>
+            </form>
           </div>
         </div>
       </div>
     );
-  };
+  }, [showReviewModal, rating, comment, isSubmittingReview, handleSubmitReview, handleSkipReview, handleCommentChange, renderStarRating]);
 
   const getEstimatedTime = (status: string, createdAt: string) => {
     const created = new Date(createdAt);
@@ -713,7 +734,7 @@ export default function OrderStatusPage() {
       </div>
 
       {/* Review Modal */}
-      <ReviewModal />
+      {ReviewModal}
     </div>
   );
 }
