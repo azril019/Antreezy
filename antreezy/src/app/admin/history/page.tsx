@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Search,
   Download,
-  Eye,
+  Search,
   TrendingUp,
   DollarSign,
   ShoppingBag,
   CheckCircle,
+  Eye,
+  RefreshCw,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -55,65 +56,143 @@ export default function TransactionHistoryPage() {
     averageOrderValue: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [selectedTransaction, setSelectedTransaction] =
     useState<OrderHistory | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Fetch hanya status "done"
-  const fetchTransactions = async () => {
-    setLoading(true);
+  // Add polling refs
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Fetch hanya status "done" with polling support
+  const fetchTransactions = async (showRefreshIndicator = false) => {
     try {
-      const response = await fetch("/api/orders?status=done");
-      if (!response.ok) {
+      if (showRefreshIndicator) setIsRefreshing(true);
+
+      // Cancel previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      // Create new abort controller
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+
+      const response = await fetch("/api/orders?status=done", { signal });
+      if (!response.ok && !signal.aborted) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      console.log("API DATA:", data);
-      const orders = Array.isArray(data) ? data : [];
 
-      // Filter hanya status "done"
-      const doneOrders = orders
-        .filter((order: any) => order?.status === "done")
-        .map((order: any) => ({
-          _id: order._id || order.id || "",
-          orderId: order.orderId || order._id || order.id || "",
-          tableId: order.tableId || "Unknown",
-          tableNumber: order.tableNumber || "Unknown",
-          items: Array.isArray(order.items)
-            ? order.items.map((item: any) => ({
-                id: item.id || item._id || "",
-                name: item.name || "Unknown Item",
-                price: Number(item.price) || 0,
-                quantity: Number(item.quantity) || 0,
-              }))
-            : [],
-          totalAmount: Number(order.totalAmount) || 0,
-          customerDetails: {
-            name: order.customerDetails?.name || "Unknown Customer",
-            phone: order.customerDetails?.phone || "",
-          },
-          status: order.status || "unknown",
-          paymentMethod: order.paymentMethod || "Unknown",
-          createdAt: order.createdAt || new Date().toISOString(),
-          updatedAt: order.updatedAt || new Date().toISOString(),
-          completedAt:
-            order.completedAt || order.updatedAt || new Date().toISOString(),
-        }));
-      console.log("Fetched transactions:", doneOrders);
+      if (!signal.aborted) {
+        const data = await response.json();
+        const orders = Array.isArray(data) ? data : [];
 
-      setTransactions(doneOrders);
-      setFilteredTransactions(doneOrders);
-      calculateStats(doneOrders);
-    } catch (error) {
-      toast.error("Gagal memuat riwayat transaksi. Silakan coba lagi.");
-      setTransactions([]);
-      setFilteredTransactions([]);
+        // Filter hanya status "done"
+        const doneOrders = orders
+          .filter((order: any) => order?.status === "done")
+          .map((order: any) => ({
+            _id: order._id || order.id || "",
+            orderId: order.orderId || order._id || order.id || "",
+            tableId: order.tableId || "Unknown",
+            tableNumber: order.tableNumber || "Unknown",
+            items: Array.isArray(order.items)
+              ? order.items.map((item: any) => ({
+                  id: item.id || item._id || "",
+                  name: item.name || "Unknown Item",
+                  price: Number(item.price) || 0,
+                  quantity: Number(item.quantity) || 0,
+                }))
+              : [],
+            totalAmount: Number(order.totalAmount) || 0,
+            customerDetails: {
+              name: order.customerDetails?.name || "Unknown Customer",
+              email: order.customerDetails?.email || "",
+              phone: order.customerDetails?.phone || "",
+            },
+            status: order.status || "unknown",
+            paymentMethod: order.paymentMethod || "Unknown",
+            createdAt: order.createdAt || new Date().toISOString(),
+            updatedAt: order.updatedAt || new Date().toISOString(),
+            completedAt:
+              order.completedAt || order.updatedAt || new Date().toISOString(),
+          }));
+
+        setTransactions(doneOrders);
+        setFilteredTransactions(doneOrders);
+        calculateStats(doneOrders);
+        setLastUpdated(new Date());
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error("Error fetching transactions:", error);
+        if (showRefreshIndicator) {
+          toast.error("Gagal memuat riwayat transaksi. Silakan coba lagi.");
+        }
+      }
     } finally {
       setLoading(false);
+      if (showRefreshIndicator) setIsRefreshing(false);
     }
   };
+
+  // Start polling
+  const startPolling = () => {
+    // Clear existing interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    // Start new polling interval - every 10 seconds for transaction history
+    pollingIntervalRef.current = setInterval(() => {
+      fetchTransactions(false); // Don't show refresh indicator for auto-refresh
+    }, 5000); // Poll every 5 seconds
+  };
+
+  // Stop polling
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
+  // Handle manual refresh
+  const handleManualRefresh = () => {
+    fetchTransactions(true);
+  };
+
+  useEffect(() => {
+    // Initial fetch
+    fetchTransactions(true);
+
+    // Start polling
+    startPolling();
+
+    // Handle visibility change to pause/resume polling
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        fetchTransactions(false);
+        startPolling();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Cleanup function
+    return () => {
+      stopPolling();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   // Statistik hanya status "done"
   const calculateStats = (orders: OrderHistory[]) => {
@@ -201,10 +280,6 @@ export default function TransactionHistoryPage() {
     calculateStats(filtered);
   }, [transactions, searchTerm, dateFilter]);
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
-
   const formatCurrency = (amount: number) => {
     const numAmount = Number(amount) || 0;
     return new Intl.NumberFormat("id-ID", {
@@ -273,7 +348,14 @@ export default function TransactionHistoryPage() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat riwayat transaksi...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -281,6 +363,7 @@ export default function TransactionHistoryPage() {
       <Toaster position="top-right" />
 
       <div className="max-w-7xl mx-auto">
+        {/* Header with refresh button */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -290,16 +373,28 @@ export default function TransactionHistoryPage() {
               Kelola dan analisis riwayat transaksi restoran
             </p>
           </div>
-          <button
-            onClick={exportToCSV}
-            disabled={
-              !filteredTransactions || filteredTransactions.length === 0
-            }
-            className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <Download size={20} />
-            Export CSV
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleManualRefresh}
+              className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
+                isRefreshing ? "animate-spin" : ""
+              }`}
+              disabled={isRefreshing}
+              title="Refresh Data"
+            >
+              <RefreshCw className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={exportToCSV}
+              disabled={
+                !filteredTransactions || filteredTransactions.length === 0
+              }
+              className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Download size={20} />
+              Export CSV
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -360,11 +455,25 @@ export default function TransactionHistoryPage() {
           </div>
         </div>
 
+        {/* Filter section with polling indicator */}
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Filter Transaksi
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">
+                Filter Transaksi
+              </h2>
+              {/* Polling status indicator */}
+              <div className="flex items-center space-x-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    isRefreshing ? "bg-blue-500 animate-pulse" : "bg-green-500"
+                  }`}
+                ></div>
+                <span className="text-sm text-gray-500">
+                  Update otomatis setiap 5 detik
+                </span>
+              </div>
+            </div>
 
             <div className="flex flex-wrap gap-4">
               <div className="relative flex-1 min-w-64">
@@ -502,6 +611,21 @@ export default function TransactionHistoryPage() {
               </table>
             )}
           </div>
+
+          {/* Add last updated timestamp */}
+          {filteredTransactions.length > 0 && (
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  Menampilkan {filteredTransactions.length} dari{" "}
+                  {transactions.length} transaksi
+                </p>
+                <p className="text-xs text-gray-400">
+                  Terakhir diperbarui: {lastUpdated.toLocaleTimeString("id-ID")}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
