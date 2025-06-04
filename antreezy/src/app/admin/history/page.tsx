@@ -80,6 +80,7 @@ export default function TransactionHistoryPage() {
           _id: order._id || order.id || "",
           orderId: order.orderId || order._id || order.id || "",
           tableId: order.tableId || "Unknown",
+          tableNumber: order.tableNumber || "Unknown",
           items: Array.isArray(order.items)
             ? order.items.map((item: any) => ({
                 id: item.id || item._id || "",
@@ -537,7 +538,7 @@ export default function TransactionHistoryPage() {
                     </p>
                     <p>
                       <span className="text-gray-500">Meja:</span>{" "}
-                      {selectedTransaction.tableId || "N/A"}
+                      {selectedTransaction.tableNumber || "N/A"}
                     </p>
                     <p>
                       <span className="text-gray-500">Metode Bayar:</span>{" "}
