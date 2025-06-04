@@ -21,6 +21,7 @@ interface Order {
   _id: string;
   orderId?: string;
   tableId: string;
+  tableNumber: string;
   items: OrderItem[];
   totalAmount?: number;
   status: string;
@@ -326,7 +327,7 @@ export default function AdminDashboard() {
                     #{(order._id || "").slice(-6).toUpperCase()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    Meja {order.tableId}
+                    Meja {order.tableNumber}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
