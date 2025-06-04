@@ -656,15 +656,15 @@ export default function TransactionHistoryPage() {
                     Informasi Pesanan
                   </h4>
                   <div className="space-y-1 text-sm">
-                    <p>
+                    <p className="text-gray-900">
                       <span className="text-gray-500">ID:</span>{" "}
                       {selectedTransaction.orderId || "N/A"}
                     </p>
-                    <p>
+                    <p className="text-gray-900">
                       <span className="text-gray-500">Meja:</span>{" "}
                       {selectedTransaction.tableNumber || "N/A"}
                     </p>
-                    <p>
+                    <p className="text-gray-900">
                       <span className="text-gray-500">Metode Bayar:</span>{" "}
                       {selectedTransaction.paymentMethod || "Unknown"}
                     </p>
@@ -676,18 +676,18 @@ export default function TransactionHistoryPage() {
                     Informasi Pelanggan
                   </h4>
                   <div className="space-y-1 text-sm">
-                    <p>
+                    <p className="text-gray-900">
                       <span className="text-gray-500">Nama:</span>{" "}
                       {selectedTransaction.customerDetails?.name || "Unknown"}
                     </p>
 
                     {selectedTransaction.customerDetails?.phone && (
-                      <p>
+                      <p className="text-gray-900">
                         <span className="text-gray-500">HP:</span>{" "}
                         {selectedTransaction.customerDetails.phone}
                       </p>
                     )}
-                    <p>
+                    <p className="text-gray-900">
                       <span className="text-gray-500">Tanggal:</span>{" "}
                       {formatDate(selectedTransaction.createdAt)}
                     </p>
@@ -725,10 +725,10 @@ export default function TransactionHistoryPage() {
                             <td className="px-4 py-2 text-sm text-gray-900">
                               {item.name || "Unknown Item"}
                             </td>
-                            <td className="px-4 py-2 text-sm text-gray-500">
+                            <td className="px-4 py-2 text-sm text-gray-900">
                               {item.quantity || 0}
                             </td>
-                            <td className="px-4 py-2 text-sm text-gray-500">
+                            <td className="px-4 py-2 text-sm text-gray-900">
                               {formatCurrency(item.price || 0)}
                             </td>
                             <td className="px-4 py-2 text-sm font-medium text-gray-900">
