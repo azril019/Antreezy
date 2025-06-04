@@ -1,7 +1,7 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import {useParams, useRouter} from "next/navigation";
+import {useEffect, useState, useRef} from "react";
 import {
   ArrowLeft,
   Clock,
@@ -11,7 +11,11 @@ import {
   Package,
   RefreshCw,
   Check,
+  Star,
+  X,
+  MessageSquare,
 } from "lucide-react";
+import {Review, NewReview} from "@/db/models/ReviewModel";
 
 interface OrderItem {
   id: string;
@@ -39,7 +43,7 @@ export default function OrderStatusPage() {
   const params = useParams();
   const router = useRouter();
   const tableId = params.id as string;
-  
+
   // Refs for cleanup
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -51,7 +55,14 @@ export default function OrderStatusPage() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [isCompletingOrder, setIsCompletingOrder] = useState<string | null>(null);
+  const [isCompletingOrder, setIsCompletingOrder] = useState<string | null>(
+    null
+  );
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewOrderId, setReviewOrderId] = useState<string | null>(null);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   const statusConfig = {
     pending: {
@@ -107,24 +118,24 @@ export default function OrderStatusPage() {
   const fetchData = async (showRefreshIndicator = false) => {
     try {
       if (showRefreshIndicator) setIsRefreshing(true);
-      
+
       // Cancel previous request if still pending
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      
+
       // Create new abort controller
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
       // Fetch orders for this table
-      const ordersRes = await fetch(`/api/cart?tableId=${tableId}`, { signal });
+      const ordersRes = await fetch(`/api/cart?tableId=${tableId}`, {signal});
       if (!ordersRes.ok && !signal.aborted) {
         throw new Error("Failed to fetch orders");
       }
-      
+
       if (signal.aborted) return;
-      
+
       const ordersData = await ordersRes.json();
 
       // Filter orders that have items
@@ -133,26 +144,27 @@ export default function OrderStatusPage() {
             (order: Order) => order.items && order.items.length > 0
           )
         : [];
-      
+
       // Separate active and completed orders
-      const activeOrders = allOrders.filter((order: Order) => 
-        order.status !== "done" && order.status !== "cancelled"
+      const activeOrders = allOrders.filter(
+        (order: Order) =>
+          order.status !== "done" && order.status !== "cancelled"
       );
-      const doneOrders = allOrders.filter((order: Order) => 
-        order.status === "done"
+      const doneOrders = allOrders.filter(
+        (order: Order) => order.status === "done"
       );
-      
+
       setOrders(activeOrders);
       setCompletedOrders(doneOrders);
       setLastUpdated(new Date());
 
       // Fetch table info (only on first load)
       if (!table) {
-        const tableRes = await fetch(`/api/tables/${tableId}`, { signal });
+        const tableRes = await fetch(`/api/tables/${tableId}`, {signal});
         if (!tableRes.ok && !signal.aborted) {
           throw new Error("Failed to fetch table info");
         }
-        
+
         if (!signal.aborted) {
           const tableData = await tableRes.json();
           setTable(tableData);
@@ -161,7 +173,7 @@ export default function OrderStatusPage() {
 
       setError(null);
     } catch (err: any) {
-      if (err.name !== 'AbortError') {
+      if (err.name !== "AbortError") {
         console.error("Error fetching data:", err);
         setError("Gagal memuat data pesanan");
       }
@@ -194,7 +206,7 @@ export default function OrderStatusPage() {
     if (tableId) {
       // Initial fetch
       fetchData(true);
-      
+
       // Start polling
       startPolling();
 
@@ -208,7 +220,7 @@ export default function OrderStatusPage() {
         }
       };
 
-      document.addEventListener('visibilitychange', handleVisibilityChange);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
 
       // Cleanup function
       return () => {
@@ -216,7 +228,10 @@ export default function OrderStatusPage() {
         if (abortControllerRef.current) {
           abortControllerRef.current.abort();
         }
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange
+        );
       };
     }
   }, [tableId]);
@@ -228,7 +243,7 @@ export default function OrderStatusPage() {
   const handleCompleteOrder = async (orderId: string) => {
     try {
       setIsCompletingOrder(orderId);
-      
+
       const response = await fetch("/api/cart", {
         method: "POST",
         headers: {
@@ -243,6 +258,9 @@ export default function OrderStatusPage() {
       });
 
       if (response.ok) {
+        // Show review modal before refreshing data
+        setReviewOrderId(orderId);
+        setShowReviewModal(true);
         // Refresh data to show updated status
         await fetchData(false);
       } else {
@@ -254,6 +272,187 @@ export default function OrderStatusPage() {
     } finally {
       setIsCompletingOrder(null);
     }
+  };
+
+  const handleSubmitReview = async () => {
+    if (rating === 0) {
+      alert("Silakan berikan rating untuk pesanan Anda");
+      return;
+    }
+
+    try {
+      setIsSubmittingReview(true);
+
+      const reviewData: NewReview = {
+        orderId: reviewOrderId!,
+        rating,
+        comment,
+        tableId,
+      };
+
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (response.ok) {
+        // Close modal and reset form
+        setShowReviewModal(false);
+        setReviewOrderId(null);
+        setRating(0);
+        setComment("");
+
+        // Show success message
+        alert("Terima kasih atas review Anda!");
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit review");
+      }
+    } catch (error: any) {
+      console.error("Error submitting review:", error);
+      alert(error.message || "Gagal mengirim review. Silakan coba lagi.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const handleSkipReview = () => {
+    setShowReviewModal(false);
+    setReviewOrderId(null);
+    setRating(0);
+    setComment("");
+  };
+
+  const renderStarRating = () => {
+    return (
+      <div className="flex justify-center space-x-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            onClick={() => setRating(star)}
+            className={`p-1 transition-colors ${
+              star <= rating ? "text-yellow-400" : "text-gray-300"
+            } hover:text-yellow-400`}>
+            <Star
+              className={`w-8 h-8 ${star <= rating ? "fill-current" : ""}`}
+            />
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const ReviewModal = () => {
+    if (!showReviewModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+          {/* Modal Header */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 rounded-full">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Pesanan Selesai!
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Bagaimana pengalaman Anda?
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleSkipReview}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                disabled={isSubmittingReview}>
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Content */}
+          <div className="p-6">
+            {/* Rating Section */}
+            <div className="text-center mb-6">
+              <h4 className="text-base font-medium text-gray-800 mb-3">
+                Berikan Rating Anda
+              </h4>
+              {renderStarRating()}
+              <div className="mt-2">
+                {rating > 0 && (
+                  <p className="text-sm text-gray-600">
+                    {rating === 1 && "Sangat Buruk"}
+                    {rating === 2 && "Buruk"}
+                    {rating === 3 && "Cukup"}
+                    {rating === 4 && "Baik"}
+                    {rating === 5 && "Sangat Baik"}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Comment Section */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Komentar (Opsional)
+              </label>
+              <div className="relative">
+                <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Ceritakan pengalaman Anda..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+                  rows={4}
+                  maxLength={500}
+                  disabled={isSubmittingReview}
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {comment.length}/500 karakter
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={handleSubmitReview}
+                disabled={isSubmittingReview || rating === 0}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                {isSubmittingReview ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Mengirim Review...
+                  </>
+                ) : (
+                  <>
+                    <Star className="w-5 h-5 mr-2" />
+                    Kirim Review
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleSkipReview}
+                disabled={isSubmittingReview}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50">
+                Lewati untuk Sekarang
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 text-center mt-4">
+              Review Anda akan membantu meningkatkan kualitas layanan kami
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const getEstimatedTime = (status: string, createdAt: string) => {
@@ -278,14 +477,13 @@ export default function OrderStatusPage() {
   const renderOrderCard = (order: Order, isCompleted = false) => {
     const status = statusConfig[order.status as keyof typeof statusConfig];
     const StatusIcon = status?.icon || Clock;
-    
+
     return (
       <div
         key={order._id}
         className={`bg-white rounded-xl shadow-sm overflow-hidden ${
-          isCompleted ? 'opacity-75' : ''
-        }`}
-      >
+          isCompleted ? "opacity-75" : ""
+        }`}>
         {/* Order Header */}
         <div className={`${status?.bgColor} p-4 border-l-4 ${status?.color}`}>
           <div className="flex items-center justify-between">
@@ -297,9 +495,7 @@ export default function OrderStatusPage() {
                 <h3 className={`font-semibold ${status?.textColor}`}>
                   {status?.label}
                 </h3>
-                <p className="text-sm text-gray-600">
-                  {status?.description}
-                </p>
+                <p className="text-sm text-gray-600">{status?.description}</p>
               </div>
             </div>
             <div className="text-right">
@@ -315,20 +511,14 @@ export default function OrderStatusPage() {
 
         {/* Order Items */}
         <div className="p-4">
-          <h4 className="font-medium text-gray-800 mb-3">
-            Detail Pesanan:
-          </h4>
+          <h4 className="font-medium text-gray-800 mb-3">Detail Pesanan:</h4>
           <div className="space-y-2">
             {order.items.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex justify-between items-center"
-              >
+              <div key={idx} className="flex justify-between items-center">
                 <div className="flex-1">
                   <p className="text-gray-800">{item.name}</p>
                   <p className="text-sm text-gray-500">
-                    {item.quantity}x @ Rp{" "}
-                    {item.price.toLocaleString()}
+                    {item.quantity}x @ Rp {item.price.toLocaleString()}
                   </p>
                 </div>
                 <p className="font-medium text-gray-800">
@@ -341,16 +531,11 @@ export default function OrderStatusPage() {
           {/* Total */}
           <div className="border-t border-gray-200 pt-3 mt-3">
             <div className="flex justify-between items-center">
-              <span className="font-semibold text-gray-800">
-                Total:
-              </span>
+              <span className="font-semibold text-gray-800">Total:</span>
               <span className="font-bold text-lg text-orange-600">
                 Rp{" "}
                 {order.items
-                  .reduce(
-                    (sum, item) => sum + item.quantity * item.price,
-                    0
-                  )
+                  .reduce((sum, item) => sum + item.quantity * item.price, 0)
                   .toLocaleString()}
               </span>
             </div>
@@ -361,25 +546,19 @@ export default function OrderStatusPage() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Waktu Pesan:</span>
               <span className="text-gray-800">
-                {new Date(order.createdAt).toLocaleTimeString(
-                  "id-ID",
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }
-                )}
+                {new Date(order.createdAt).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </span>
             </div>
             <div className="flex justify-between text-sm mt-1">
               <span className="text-gray-600">Update Terakhir:</span>
               <span className="text-gray-800">
-                {new Date(order.updatedAt).toLocaleTimeString(
-                  "id-ID",
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }
-                )}
+                {new Date(order.updatedAt).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </span>
             </div>
           </div>
@@ -390,8 +569,7 @@ export default function OrderStatusPage() {
               <button
                 onClick={() => handleCompleteOrder(order._id)}
                 disabled={isCompletingOrder === order._id}
-                className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
+                className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
                 {isCompletingOrder === order._id ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -435,14 +613,12 @@ export default function OrderStatusPage() {
           <div className="space-y-3">
             <button
               onClick={handleManualRefresh}
-              className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors"
-            >
+              className="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
               Coba Lagi
             </button>
             <button
               onClick={() => router.push(`/tables/${tableId}`)}
-              className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors"
-            >
+              className="w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors">
               Kembali ke Menu
             </button>
           </div>
@@ -459,8 +635,7 @@ export default function OrderStatusPage() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.push(`/tables/${tableId}`)}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
-            >
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800">
               <ArrowLeft className="w-5 h-5" />
               <span>Kembali</span>
             </button>
@@ -471,10 +646,9 @@ export default function OrderStatusPage() {
             <button
               onClick={handleManualRefresh}
               className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
-                isRefreshing ? 'animate-spin' : ''
+                isRefreshing ? "animate-spin" : ""
               }`}
-              disabled={isRefreshing}
-            >
+              disabled={isRefreshing}>
               <RefreshCw className="w-5 h-5 text-gray-600" />
             </button>
           </div>
@@ -503,8 +677,7 @@ export default function OrderStatusPage() {
             </p>
             <button
               onClick={() => router.push(`/tables/${tableId}`)}
-              className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium"
-            >
+              className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
               Mulai Pesan Sekarang
             </button>
           </div>
@@ -524,17 +697,23 @@ export default function OrderStatusPage() {
         {(orders.length > 0 || completedOrders.length > 0) && (
           <div className="mt-6 text-center space-y-2">
             <div className="flex items-center justify-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isRefreshing ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isRefreshing ? "bg-blue-500 animate-pulse" : "bg-green-500"
+                }`}></div>
               <p className="text-sm text-gray-500">
                 Update otomatis setiap 3 detik
               </p>
             </div>
             <p className="text-xs text-gray-400">
-              Terakhir diperbarui: {lastUpdated.toLocaleTimeString('id-ID')}
+              Terakhir diperbarui: {lastUpdated.toLocaleTimeString("id-ID")}
             </p>
           </div>
         )}
       </div>
+
+      {/* Review Modal */}
+      <ReviewModal />
     </div>
   );
 }
