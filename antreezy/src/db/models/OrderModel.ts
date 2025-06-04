@@ -1,12 +1,11 @@
 import { db } from "../config/mongodb";
 import { ObjectId } from "mongodb";
 
-const COLLECTION_NAME = "orders";
-
 export interface Order {
   _id?: ObjectId | string;
   orderId: string;
   tableId: string;
+  tableNumber: string;
   items: Array<{
     id: string;
     name: string;
@@ -16,7 +15,7 @@ export interface Order {
   totalAmount: number;
   status: "pending" | "capture" | "queue" | "cooking" | "served" | "done";
   paymentMethod?: string;
-  paymentType?: "qris" | "cash" | "bank_transfer" | "credit_card" | "e_wallet"; // Add payment_type field
+  paymentType?: string;
   customerDetails: {
     name: string;
     phone?: string;

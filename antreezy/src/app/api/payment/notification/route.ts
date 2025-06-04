@@ -14,9 +14,6 @@ export async function POST(request: Request) {
     // Process the notification data
     console.log("Received notification for order:", notificationData.order_id);
 
-    // Extract payment type from notification
-    const paymentType = notificationData.payment_type || "qris";
-
     // Update order status and payment type in your database
     const updatedOrder = await OrderModel.updateOrderStatus(
       notificationData.order_id,

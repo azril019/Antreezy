@@ -16,6 +16,7 @@ interface OrderHistory {
   _id: string;
   orderId: string;
   tableId: string;
+  tableNumber?: string; // Optional, if you want to display table number
   items: Array<{
     id: string;
     name: string;
@@ -233,14 +234,23 @@ export default function TransactionHistoryPage() {
       toast.error("Tidak ada data untuk diekspor");
       return;
     }
-    const headers = ["ID Pesanan", "Meja", "Pelanggan", "Metode Bayar", "Total", "Tanggal"];
+    const headers = [
+      "ID Pesanan",
+      "Meja",
+      "Pelanggan",
+      "Metode Bayar",
+      "Total",
+      "Tanggal",
+    ];
     const csvData = filteredTransactions.map((transaction) => [
       transaction.orderId || "",
       `Meja ${transaction.tableId || ""}`,
       transaction.customerDetails?.name || "",
-      transaction.paymentMethod === "cash" ? "Tunai" : 
-      transaction.paymentMethod === "qris" ? "QRIS" : 
-      transaction.paymentMethod || "Unknown",
+      transaction.paymentMethod === "cash"
+        ? "Tunai"
+        : transaction.paymentMethod === "qris"
+        ? "QRIS"
+        : transaction.paymentMethod || "Unknown",
       transaction.totalAmount || 0,
       formatDate(transaction.createdAt),
     ]);
@@ -436,7 +446,7 @@ export default function TransactionHistoryPage() {
                           "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Meja {transaction.tableId || "N/A"}
+                        Meja {transaction.tableNumber || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {transaction.customerDetails?.name || "Unknown"}
@@ -451,16 +461,20 @@ export default function TransactionHistoryPage() {
                         item
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          transaction.paymentMethod === "cash" 
-                            ? "bg-green-100 text-green-800"
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            transaction.paymentMethod === "cash"
+                              ? "bg-green-100 text-green-800"
+                              : transaction.paymentMethod === "qris"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {transaction.paymentMethod === "cash"
+                            ? "Tunai"
                             : transaction.paymentMethod === "qris"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}>
-                          {transaction.paymentMethod === "cash" ? "Tunai" : 
-                           transaction.paymentMethod === "qris" ? "QRIS" : 
-                           transaction.paymentMethod || "Unknown"}
+                            ? "QRIS"
+                            : transaction.paymentMethod || "Unknown"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
