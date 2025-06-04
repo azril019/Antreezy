@@ -330,9 +330,12 @@ export default function OrderStatusPage() {
     setRating(star);
   }, []);
 
-  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setComment(e.target.value);
-  }, []);
+  const handleCommentChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setComment(e.target.value);
+    },
+    []
+  );
 
   const renderStarRating = useCallback(() => {
     return (
@@ -388,10 +391,11 @@ export default function OrderStatusPage() {
 
           {/* Modal Content */}
           <div className="p-6">
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleSubmitReview();
-            }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSubmitReview();
+              }}>
               {/* Rating Section */}
               <div className="text-center mb-6">
                 <h4 className="text-base font-medium text-gray-800 mb-3">
@@ -413,27 +417,26 @@ export default function OrderStatusPage() {
 
               {/* Comment Section */}
               <div className="mb-6">
-                <label 
-                  htmlFor="review-comment" 
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
+                <label
+                  htmlFor="review-comment"
+                  className="block text-sm font-medium text-gray-700 mb-2">
                   Komentar (Opsional)
                 </label>
                 <div className="relative">
-                  <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-gray-400 pointer-events-none" />
+                  <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-black pointer-events-none" />
                   <textarea
                     id="review-comment"
                     name="comment"
                     value={comment}
                     onChange={handleCommentChange}
                     placeholder="Ceritakan pengalaman Anda..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none transition-colors"
+                    className="w-full pl-10 pr-4 py-3 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none transition-colors"
                     rows={4}
                     maxLength={500}
                     disabled={isSubmittingReview}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-black mt-1">
                   {comment.length}/500 karakter
                 </p>
               </div>
@@ -474,7 +477,16 @@ export default function OrderStatusPage() {
         </div>
       </div>
     );
-  }, [showReviewModal, rating, comment, isSubmittingReview, handleSubmitReview, handleSkipReview, handleCommentChange, renderStarRating]);
+  }, [
+    showReviewModal,
+    rating,
+    comment,
+    isSubmittingReview,
+    handleSubmitReview,
+    handleSkipReview,
+    handleCommentChange,
+    renderStarRating,
+  ]);
 
   const getEstimatedTime = (status: string, createdAt: string) => {
     const created = new Date(createdAt);
