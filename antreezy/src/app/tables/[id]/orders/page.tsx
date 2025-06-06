@@ -16,7 +16,7 @@ import {
   MessageSquare,
   CreditCard,
 } from "lucide-react";
-import { Review, NewReview } from "@/db/models/ReviewModel";
+import { NewReview } from "@/db/models/ReviewModel";
 import toast, { Toaster } from "react-hot-toast";
 
 interface OrderItem {
@@ -152,9 +152,12 @@ export default function OrderStatusPage() {
       const signal = abortControllerRef.current.signal;
 
       // Fetch orders for this table from orders collection
-      const ordersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders?tableId=${tableId}`, {
-        signal,
-      });
+      const ordersRes = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders?tableId=${tableId}`,
+        {
+          signal,
+        }
+      );
 
       if (!ordersRes.ok && !signal.aborted) {
         throw new Error("Failed to fetch orders");
@@ -206,7 +209,10 @@ export default function OrderStatusPage() {
 
         // Fetch table info (only on first load)
         if (!table) {
-          const tableRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`, { signal });
+          const tableRes = await fetch(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`,
+            { signal }
+          );
           if (!tableRes.ok && !signal.aborted) {
             throw new Error("Failed to fetch table info");
           }
@@ -219,8 +225,8 @@ export default function OrderStatusPage() {
 
         setError(null);
       }
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== "AbortError") {
         console.error("Error fetching data:", err);
         setError("Gagal memuat data pesanan");
       }
@@ -292,17 +298,20 @@ export default function OrderStatusPage() {
     try {
       setIsCompletingOrder(orderId);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId: orderId,
-          status: "done",
-          isActive: false,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId: orderId,
+            status: "done",
+            isActive: false,
+          }),
+        }
+      );
 
       if (response.ok) {
         setReviewOrderId(orderId);
@@ -338,9 +347,12 @@ export default function OrderStatusPage() {
       setIsCancellingOrder(orderToDelete);
       setShowDeleteConfirm(false);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders/${orderToDelete}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders/${orderToDelete}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (response.ok) {
         // Refresh data to remove deleted order
@@ -388,13 +400,16 @@ export default function OrderStatusPage() {
         tableId,
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(reviewData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(reviewData),
+        }
+      );
 
       if (response.ok) {
         setShowReviewModal(false);
@@ -410,15 +425,16 @@ export default function OrderStatusPage() {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to submit review");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting review:", error);
-      toast.error(
-        error.message || "Gagal mengirim review. Silakan coba lagi.",
-        {
-          duration: 4000,
-          position: "top-center",
-        }
-      );
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Gagal mengirim review. Silakan coba lagi.";
+      toast.error(errorMessage, {
+        duration: 4000,
+        position: "top-center",
+      });
     } finally {
       setIsSubmittingReview(false);
     }
@@ -919,7 +935,8 @@ export default function OrderStatusPage() {
                         Pesanan sedang diproses
                       </p>
                       <p className="text-blue-600">
-                        Tombol "Selesai" akan muncul ketika pesanan siap
+                        Tombol &quot;Selesai&quot; akan muncul ketika pesanan
+                        siap
                       </p>
                     </div>
                   </div>

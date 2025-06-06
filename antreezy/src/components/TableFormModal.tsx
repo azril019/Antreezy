@@ -16,7 +16,7 @@ interface TableFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   table: Table | null;
-  onSubmit: (tableData: any) => void;
+  onSubmit: (tableData: unknown) => void;
   isProcessing: boolean;
 }
 

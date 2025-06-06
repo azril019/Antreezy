@@ -1,6 +1,11 @@
 import errHandler from "@/helpers/errHandler";
 import UserModel from "@/db/models/UserModel";
 
+type ErrorWithStatus = {
+  status?: number;
+  message: string;
+};
+
 export async function GET(request: Request) {
   try {
     const userId = request.headers.get("x-user-id");
@@ -23,6 +28,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

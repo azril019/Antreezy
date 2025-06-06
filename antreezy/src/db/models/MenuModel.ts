@@ -1,5 +1,5 @@
 import { db } from "@/db/config/mongodb";
-import { ObjectId, OptionalId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { NewMenuItem, MenuItem } from "@/app/types";
 
 export default class MenuModel {

@@ -57,7 +57,9 @@ export default function QRCodeModal({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -77,16 +79,19 @@ export default function QRCodeModal({
 
     setIsGenerating(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "generate-qr",
-          forceRegenerate,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "generate-qr",
+            forceRegenerate,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -107,9 +112,11 @@ export default function QRCodeModal({
       } else {
         throw new Error(result.message || "Failed to generate QR code");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error generating QR code:", error);
-      toast.error(error.message || "Gagal membuat QR Code");
+      toast.error(
+        error instanceof Error ? error.message : "Gagal membuat QR Code"
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -119,9 +126,12 @@ export default function QRCodeModal({
     if (!table || !qrData) return;
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${table.id}/qr`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to delete QR code");
@@ -129,7 +139,7 @@ export default function QRCodeModal({
 
       setQrData(null);
       toast.success("QR Code berhasil dihapus!");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting QR code:", error);
       toast.error("Gagal menghapus QR Code");
     }
@@ -150,6 +160,7 @@ export default function QRCodeModal({
 
       toast.success("QR Code berhasil didownload!");
     } catch (error) {
+      console.error("Error downloading QR code:", error);
       toast.error("Gagal mendownload QR Code");
     }
   };
@@ -161,6 +172,7 @@ export default function QRCodeModal({
       await navigator.clipboard.writeText(qrData.qrData);
       toast.success("Link berhasil disalin!");
     } catch (error) {
+      console.error("Error copying QR link:", error);
       toast.error("Gagal menyalin link");
     }
   };

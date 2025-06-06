@@ -27,7 +27,7 @@ export default class OrderModel {
     return db.collection<Order>("orders");
   }
 
-  static async createOrder(orderData: any): Promise<Order> {
+  static async createOrder(orderData: Order): Promise<Order> {
     const newOrder = {
       ...orderData,
       isActive: true,
@@ -97,7 +97,9 @@ export default class OrderModel {
       const collection = db.collection("orders");
 
       // Handle different ID formats
-      let query: any;
+      let query:
+        | { _id: ObjectId }
+        | { $or: ({ orderId: string } | { tableId: string })[] };
 
       // Check if orderId is a valid ObjectId
       if (ObjectId.isValid(orderId)) {
@@ -161,7 +163,9 @@ export default class OrderModel {
       const collection = db.collection("orders");
 
       // Handle different ID formats
-      let query: any;
+      let query:
+        | { _id: ObjectId }
+        | { $or: ({ orderId: string } | { tableId: string })[] };
 
       // Check if orderId is a valid ObjectId
       if (ObjectId.isValid(orderId)) {

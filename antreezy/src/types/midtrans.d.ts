@@ -1,4 +1,4 @@
-declare module 'midtrans-client' {
+declare module "midtrans-client" {
   export interface TransactionDetails {
     order_id: string;
     gross_amount: number;
@@ -93,10 +93,10 @@ declare module 'midtrans-client' {
 
   export class CoreApi {
     constructor(config: SnapConfig);
-    charge(parameter: any): Promise<any>;
-    capture(parameter: any): Promise<any>;
-    cardRegister(parameter: any): Promise<any>;
-    cardToken(parameter: any): Promise<any>;
-    cardPointInquiry(parameter: any): Promise<any>;
+    charge(parameter: unknown): Promise<unknown>;
+    capture(parameter: unknown): Promise<unknown>;
+    cardRegister(parameter: unknown): Promise<unknown>;
+    cardToken(parameter: unknown): Promise<unknown>;
+    cardPointInquiry(parameter: unknown): Promise<unknown>;
   }
 }

@@ -3,10 +3,13 @@ import errHandler from "./helpers/errHandler";
 import { verifyTokenJose } from "./helpers/jwt";
 import { NextResponse } from "next/server";
 
+type ErrorWithStatus = {
+  status?: number;
+  message?: string;
+};
+
 export async function middleware(request: Request) {
   console.log("masuk middleware");
-
-  const pathname = new URL(request.url).pathname;
 
   try {
     const cookieStore = await cookies();
@@ -32,7 +35,7 @@ export async function middleware(request: Request) {
     return response;
   } catch (error) {
     console.error("Error in middleware:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 

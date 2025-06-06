@@ -1,28 +1,31 @@
-import {NextRequest, NextResponse} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import ReviewModel from "@/db/models/ReviewModel";
+import errHandler from "@/helpers/errHandler";
+
+type ErrorWithStatus = Error & { status?: number };
 
 export async function PUT(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const {id} = params;
+    const { id } = await params;
     const body = await request.json();
-    const {orderId, tableId, rating, comment} = body;
+    const { orderId, tableId, rating, comment } = body;
 
     // Validate required fields
     if (!orderId || !tableId || !rating) {
       return NextResponse.json(
-        {error: "Missing required fields"},
-        {status: 400}
+        { error: "Missing required fields" },
+        { status: 400 }
       );
     }
 
     // Validate rating range
     if (rating < 1 || rating > 5) {
       return NextResponse.json(
-        {error: "Rating must be between 1 and 5"},
-        {status: 400}
+        { error: "Rating must be between 1 and 5" },
+        { status: 400 }
       );
     }
 
@@ -34,7 +37,7 @@ export async function PUT(
     });
 
     if (!updatedReview) {
-      return NextResponse.json({error: "Review not found"}, {status: 404});
+      return NextResponse.json({ error: "Review not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -42,60 +45,51 @@ export async function PUT(
       message: "Review updated successfully",
       review: updatedReview,
     });
-  } catch (error: any) {
+  } catch (error) {
+    errHandler(error as ErrorWithStatus);
     console.error("Error updating review:", error);
-    return NextResponse.json(
-      {error: error.message || "Internal server error"},
-      {status: 500}
-    );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  {params}: {params: {id: string}}
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const {id} = params;
+    const { id } = await params;
 
     const result = await ReviewModel.deleteReview(id);
 
     if (!result) {
-      return NextResponse.json({error: "Review not found"}, {status: 404});
+      return NextResponse.json({ error: "Review not found" }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
       message: result,
     });
-  } catch (error: any) {
+  } catch (error) {
+    errHandler(error as ErrorWithStatus);
     console.error("Error deleting review:", error);
-    return NextResponse.json(
-      {error: error.message || "Internal server error"},
-      {status: 500}
-    );
   }
 }
 
 export async function GET(
-  request: NextRequest,
-  {params}: {params: {id: string}}
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const {id} = params;
+    const reviewId = (await params).id;
 
-    const review = await ReviewModel.getReviewById(id);
+    const review = await ReviewModel.getReviewById(reviewId);
 
     if (!review) {
-      return NextResponse.json({error: "Review not found"}, {status: 404});
+      return NextResponse.json({ error: "Review not found" }, { status: 404 });
     }
 
     return NextResponse.json(review);
-  } catch (error: any) {
+  } catch (error) {
+    errHandler(error as ErrorWithStatus);
     console.error("Error fetching review:", error);
-    return NextResponse.json(
-      {error: error.message || "Internal server error"},
-      {status: 500}
-    );
   }
 }

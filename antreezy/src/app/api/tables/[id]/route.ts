@@ -2,6 +2,11 @@ import errHandler from "@/helpers/errHandler";
 import TableModel from "@/db/models/TableModel";
 import { NewTable } from "@/app/types";
 
+interface ErrorWithStatus {
+  status?: number;
+  message: string;
+}
+
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -41,7 +46,7 @@ export async function PUT(
     );
   } catch (error) {
     console.log("🚀 ~ PUT tables ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
@@ -66,7 +71,7 @@ export async function GET(
     );
   } catch (error) {
     console.log("🚀 ~ GET tables ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
@@ -89,6 +94,6 @@ export async function DELETE(
     );
   } catch (error) {
     console.log("🚀 ~ DELETE tables ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

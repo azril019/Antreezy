@@ -3,6 +3,11 @@ import MenuModel from "@/db/models/MenuModel";
 import { NewMenuItem } from "@/app/types";
 import { generateNutritionalInfo } from "@/helpers/geminiAI";
 
+interface ErrorWithStatus extends Error {
+  status?: number;
+  message: string;
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -29,20 +34,21 @@ export async function PUT(
     );
   } catch (error) {
     console.log("🚀 ~ PUT ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const result = await MenuModel.deleteMenuItem(params.id);
+    const menuId = (await params).id;
+    const result = await MenuModel.deleteMenuItem(menuId);
     if (!result) throw { status: 400, message: "Failed to delete menu item" };
     return Response.json({ message: result }, { status: 200 });
   } catch (error) {
     console.log("🚀 ~ DELETE ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

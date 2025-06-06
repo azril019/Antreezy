@@ -116,7 +116,10 @@ const TableManagement = () => {
   };
 
   // Handle modal submit (create or update)
-  const handleModalSubmit = async (tableData: NewTable) => {
+  const handleModalSubmit = async (tableData: unknown) => {
+    // Type guard to ensure tableData is NewTable
+    const data = tableData as NewTable;
+
     setIsProcessing(true);
 
     try {
@@ -133,7 +136,7 @@ const TableManagement = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(tableData),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {

@@ -1,4 +1,6 @@
+import { items } from "@/app/types";
 import OrderModel, { Order } from "@/db/models/OrderModel";
+import midtransClient from "midtrans-client";
 import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -29,8 +31,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate key format for sandbox
+    // Validate key format
     if (!isProduction) {
+      // Sandbox keys validation
       if (!serverKey.startsWith("SB-Mid-server-")) {
         console.error("Invalid sandbox server key format");
         return Response.json(
@@ -54,27 +57,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Import and initialize Midtrans
-    let Snap: any;
+    // Parse request body with error handling
+    let body;
     try {
-      const midtransClient = require("midtrans-client");
-      Snap = midtransClient.Snap;
-    } catch (error) {
-      console.error("Failed to import midtrans-client:", error);
+      body = await request.json();
+      console.log("Request body parsed successfully");
+    } catch (parseError) {
+      console.error("Failed to parse request body:", parseError);
       return Response.json(
-        { error: "Midtrans client not available" },
-        { status: 500 }
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
       );
     }
-
-    const snap = new Snap({
-      isProduction,
-      serverKey,
-      clientKey,
-    });
-
-    const body = await request.json();
-    console.log("Request body received");
 
     const {
       tableId,
@@ -85,87 +79,123 @@ export async function POST(request: NextRequest) {
       paymentType,
     } = body;
 
-    // Validate required fields
+    // Enhanced validation
     if (!tableId || !items || !totalAmount) {
-      console.error("Missing required fields");
+      console.error("Missing required fields:", {
+        tableId,
+        items: !!items,
+        totalAmount,
+      });
       return Response.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: tableId, items, or totalAmount" },
         { status: 400 }
       );
     }
 
-    // Validate items array
     if (!Array.isArray(items) || items.length === 0) {
-      console.error("Invalid items array");
-      return Response.json({ error: "Invalid items data" }, { status: 400 });
+      console.error("Invalid items array:", items);
+      return Response.json(
+        { error: "Items must be a non-empty array" },
+        { status: 400 }
+      );
+    }
+
+    // Initialize Midtrans with better error handling
+    let snap;
+    try {
+      const Snap = midtransClient.Snap;
+      snap = new Snap({
+        isProduction,
+        serverKey,
+        clientKey,
+      });
+      console.log("Midtrans Snap initialized successfully");
+    } catch (midtransError) {
+      console.error("Failed to initialize Midtrans:", midtransError);
+      return Response.json(
+        { error: "Payment service initialization failed" },
+        { status: 500 }
+      );
     }
 
     // Generate unique order ID
     const finalOrderId = orderId || `ORDER-${tableId}-${Date.now()}`;
 
-    // Process items and calculate total
-    const processedItems = items.map((item: any) => ({
-      id: String(item.id),
-      price: Math.round(item.price),
-      quantity: parseInt(String(item.quantity)),
-      name: String(item.name).substring(0, 50),
-    }));
+    // Process items with validation
+    let processedItems;
+    try {
+      processedItems = items.map((item: items, index: number) => {
+        if (!item.id || !item.name || !item.price || !item.quantity) {
+          throw new Error(
+            `Invalid item at index ${index}: missing required fields`
+          );
+        }
+        return {
+          id: String(item.id),
+          price: Math.round(Number(item.price)),
+          quantity: parseInt(String(item.quantity)),
+          name: String(item.name).substring(0, 50),
+        };
+      });
+      console.log("Items processed successfully:", processedItems.length);
+    } catch (itemError) {
+      console.error("Error processing items:", itemError);
+      return Response.json(
+        {
+          error: "Invalid item data",
+          details:
+            itemError instanceof Error ? itemError.message : "Unknown error",
+        },
+        { status: 400 }
+      );
+    }
 
-    // Calculate subtotal from items
+    // Calculate amounts
     const subtotal = processedItems.reduce((total, item) => {
       return total + item.price * item.quantity;
     }, 0);
 
-    // Calculate tax (11%)
-    const tax = Math.round(subtotal * 0.11);
-
-    // Add tax as separate item for transparency
-    const itemsWithTax = [
-      ...processedItems,
-      {
-        id: "tax",
-        price: tax,
-        quantity: 1,
-        name: "Pajak (11%)",
-      },
-    ];
-
-    // Calculate final gross amount
-    const grossAmount = subtotal + tax;
+    // Don't add tax separately - let Midtrans handle it or include it in item prices
+    const grossAmount = subtotal; // Remove tax calculation here
 
     console.log("Payment calculation:", {
       subtotal,
-      tax,
       grossAmount,
       providedTotalAmount: totalAmount,
       itemsCount: processedItems.length,
     });
 
-    // Prepare transaction details
+    // Debug: Log the exact amounts
+    console.log(
+      "Processed items with amounts:",
+      processedItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        total: item.price * item.quantity,
+      }))
+    );
+
+    // Get base URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+    // Prepare transaction parameters
     const parameter = {
       transaction_details: {
         order_id: finalOrderId,
         gross_amount: grossAmount,
       },
-      credit_card: {
-        secure: true,
-      },
-      item_details: itemsWithTax,
+      item_details: processedItems,
       customer_details: {
         first_name: customerDetails?.name || `Table-${tableId}`,
-        phone: customerDetails?.phone || "08123456789",
-        billing_address: {
-          first_name: customerDetails?.name || `Table-${tableId}`,
-          address: "Restaurant Address",
-          city: "Jakarta",
-          postal_code: "12345",
-          country_code: "IDN",
-        },
+        email: customerDetails?.email || `table${tableId}@restaurant.com`,
+        phone: customerDetails?.phone || "+62000000000",
       },
       callbacks: {
-        finish: `${process.env.NEXT_PUBLIC_BASE_URL}/tables/${tableId}/payment/success`,
-        error: `${process.env.NEXT_PUBLIC_BASE_URL}/tables/${tableId}/payment/error`,
-        pending: `${process.env.NEXT_PUBLIC_BASE_URL}/tables/${tableId}/payment/pending`,
+        finish: `${baseUrl}/tables/${tableId}/payment/success`,
+        error: `${baseUrl}/tables/${tableId}/payment/error`,
+        pending: `${baseUrl}/tables/${tableId}/payment/pending`,
       },
       expiry: {
         unit: "minutes",
@@ -173,108 +203,113 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // Validate that gross_amount equals sum of item_details
-    const calculatedTotal = parameter.item_details.reduce((total, item) => {
-      return total + item.price * item.quantity;
-    }, 0);
+    // Debug: Verify amounts match
+    const itemDetailsSum = processedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    console.log("Amount verification:", {
+      grossAmount,
+      itemDetailsSum,
+      match: grossAmount === itemDetailsSum,
+    });
 
-    if (parameter.transaction_details.gross_amount !== calculatedTotal) {
-      console.error("Amount mismatch:", {
-        gross_amount: parameter.transaction_details.gross_amount,
-        calculated_total: calculatedTotal,
-        difference:
-          parameter.transaction_details.gross_amount - calculatedTotal,
-      });
+    console.log("Creating Midtrans transaction with order_id:", finalOrderId);
+    console.log("Transaction parameter:", JSON.stringify(parameter, null, 2));
 
-      // Fix the gross amount to match calculated total
-      parameter.transaction_details.gross_amount = calculatedTotal;
+    // Create transaction with Midtrans
+    let response;
+    try {
+      response = await snap.createTransaction(parameter);
+      console.log("✅ Midtrans transaction created successfully");
+    } catch (midtransError) {
+      console.error("❌ Midtrans transaction failed:", midtransError);
+      return Response.json(
+        {
+          error: "Failed to create payment transaction",
+          details:
+            midtransError instanceof Error
+              ? midtransError.message
+              : "Midtrans API error",
+        },
+        { status: 500 }
+      );
     }
 
-    console.log("Creating transaction with order_id:", finalOrderId);
-    console.log(
-      "Final transaction amount:",
-      parameter.transaction_details.gross_amount
-    );
-    console.log("Items total verification:", calculatedTotal);
+    // Get table data
+    let tableData;
+    try {
+      const resTable = await fetch(`${baseUrl}/api/tables/${tableId}`);
+      if (!resTable.ok) {
+        throw new Error(`Table API returned ${resTable.status}`);
+      }
+      tableData = await resTable.json();
+      console.log("Table data retrieved successfully");
+    } catch (tableError) {
+      console.error("Failed to fetch table data:", tableError);
+      // Continue without table data, use fallback
+      tableData = { data: { nomor: tableId } };
+    }
 
-    // Create transaction token
-    const response = await snap.createTransaction(parameter);
-    console.log("✅ Midtrans transaction created successfully");
+    // Create order in database
+    try {
+      const orderData: Omit<Order, "_id"> = {
+        orderId: finalOrderId,
+        tableId,
+        tableNumber: tableData?.data?.nomor || tableId,
+        items: processedItems,
+        totalAmount: grossAmount,
+        status: "pending",
+        paymentMethod: paymentType || "qris",
+        paymentType: paymentType || "qris",
+        customerDetails: {
+          name: customerDetails?.name || `Table-${tableId}`,
+          phone: customerDetails?.phone || "",
+        },
+        midtrans: {
+          token: response.token,
+          redirect_url: response.redirect_url,
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-    const resTable = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/` + tableId);
-    const tableData = await resTable.json();
-
-    // Create order in database with customer details and payment type
-    const orderData: Omit<Order, "_id"> = {
-      orderId: finalOrderId,
-      tableId,
-      tableNumber: tableData?.data.nomor,
-      items: processedItems,
-      totalAmount: grossAmount,
-      status: "pending",
-      paymentMethod: paymentType || "qris", // Default to qris if not provided
-      paymentType: paymentType || "qris", // Add payment_type field
-      customerDetails: {
-        name: customerDetails?.name || `Table-${tableId}`,
-        phone: customerDetails?.phone || "",
-      },
-      midtrans: {
-        token: response.token,
-        redirect_url: response.redirect_url,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await OrderModel.createOrder(orderData);
-    console.log(
-      "✅ Order saved to database with customer details and payment type"
-    );
+      await OrderModel.createOrder(orderData);
+      console.log("✅ Order saved to database successfully");
+    } catch (dbError) {
+      console.error("❌ Failed to save order to database:", dbError);
+      return Response.json(
+        {
+          error: "Failed to save order",
+          details:
+            dbError instanceof Error ? dbError.message : "Database error",
+        },
+        { status: 500 }
+      );
+    }
 
     return Response.json({
       success: true,
       token: response.token,
       redirect_url: response.redirect_url,
       order_id: finalOrderId,
-      amount: parameter.transaction_details.gross_amount,
+      amount: grossAmount,
     });
-  } catch (error: any) {
-    console.error("Detailed Midtrans payment error:", {
-      message: error.message,
-      stack: error.stack,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+    console.log("✅ Payment API response sent successfully");
+  } catch (error) {
+    console.error("❌ Unexpected error in payment API:", error);
 
-    // Handle specific Midtrans API errors
-    if (error.response?.status === 401) {
-      return Response.json(
-        {
-          error: "Unauthorized - Invalid API keys",
-          details: "Please check your Midtrans server key and client key",
-          midtransError: error.response?.data,
-        },
-        { status: 401 }
-      );
-    }
+    // Enhanced error response
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
+    const errorStack = error instanceof Error ? error.stack : undefined;
 
-    if (error.response?.status === 400) {
-      return Response.json(
-        {
-          error: "Bad Request",
-          details:
-            error.response?.data?.error_messages?.join(", ") ||
-            "Invalid request data",
-          midtransError: error.response?.data,
-        },
-        { status: 400 }
-      );
-    }
+    console.error("Error stack:", errorStack);
 
     return Response.json(
       {
-        error: "Failed to create payment",
-        details: error.message || "Unknown error occurred",
+        error: "Internal server error",
+        details: errorMessage,
         timestamp: new Date().toISOString(),
       },
       { status: 500 }
