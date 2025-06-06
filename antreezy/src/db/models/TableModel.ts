@@ -72,7 +72,15 @@ export default class TableModel {
       generatedAt: string;
     } | null
   ): Promise<Table | null> {
-    const updateData: any = {
+    const updateData: {
+      updatedAt: string;
+      qrCodeData?: {
+        qrCodeDataURL: string;
+        qrData: string;
+        qrCodeBase64: string;
+        generatedAt: string;
+      };
+    } = {
       updatedAt: new Date().toISOString(),
     };
 

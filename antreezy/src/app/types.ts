@@ -12,6 +12,16 @@ export type NewUser = {
   role: string;
 };
 
+export type ContactRestaurant = {
+  phone?: string;
+  email?: string;
+  website?: string;
+  instagram?: string;
+  facebook?: string;
+  twitter?: string;
+  whatsapp?: string;
+};
+
 export type NewRestaurant = {
   id?: string;
   name: string;

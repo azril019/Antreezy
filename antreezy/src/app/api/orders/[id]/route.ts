@@ -2,6 +2,11 @@ import { NextRequest } from "next/server";
 import OrderModel from "@/db/models/OrderModel";
 import errHandler from "@/helpers/errHandler";
 
+type ErrorWithStatus = {
+  status?: number;
+  message?: string;
+};
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -36,6 +41,6 @@ export async function DELETE(
     );
   } catch (error) {
     console.log("🚀 ~ DELETE order ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

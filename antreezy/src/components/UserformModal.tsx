@@ -101,7 +101,7 @@ export default function UserFormModal({
     if (validate()) {
       // If updating and password is empty, remove it from the payload
       if (user && !userData.password) {
-        const { password, ...dataWithoutPassword } = userData;
+        const { ...dataWithoutPassword } = userData;
         onSubmit(dataWithoutPassword);
       } else {
         onSubmit(userData);

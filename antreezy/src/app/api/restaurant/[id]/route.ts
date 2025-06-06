@@ -2,6 +2,11 @@ import errHandler from "@/helpers/errHandler";
 import RestaurantModel from "@/db/models/RestaurantModel";
 import { NewRestaurant } from "@/app/types";
 
+type ErrorWithStatus = {
+  status?: number;
+  message: string;
+};
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -12,7 +17,7 @@ export async function GET(
 
     return Response.json(restaurant);
   } catch (error) {
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
@@ -27,6 +32,6 @@ export async function PUT(
 
     return Response.json({ message: result });
   } catch (error) {
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

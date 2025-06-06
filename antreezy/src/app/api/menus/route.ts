@@ -3,13 +3,18 @@ import MenuModel from "@/db/models/MenuModel";
 import { NewMenuItem } from "@/app/types";
 import { generateNutritionalInfo } from "@/helpers/geminiAI";
 
+type ErrorWithStatus = {
+  status?: number;
+  message?: string;
+};
+
 export async function GET() {
   try {
     const result = await MenuModel.getAllMenuItems();
     return Response.json(result, { status: 200 });
   } catch (error) {
     console.log("🚀 ~ GET ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
@@ -36,6 +41,6 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.log("🚀 ~ POST ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

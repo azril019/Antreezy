@@ -2,6 +2,11 @@ import errHandler from "@/helpers/errHandler";
 import TableModel from "@/db/models/TableModel";
 import QRCode from "qrcode";
 
+interface ErrorWithStatus {
+  status?: number;
+  message?: string;
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -49,7 +54,7 @@ export async function GET(
     );
   } catch (error) {
     console.log("🚀 ~ GET QR ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
@@ -154,7 +159,7 @@ export async function POST(
     );
   } catch (error) {
     console.log("🚀 ~ POST generate QR ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
@@ -186,6 +191,6 @@ export async function DELETE(
     );
   } catch (error) {
     console.log("🚀 ~ DELETE QR ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

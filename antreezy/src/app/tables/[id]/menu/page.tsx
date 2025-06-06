@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, ShoppingCart, Star } from "lucide-react";
+import { ArrowLeft, Plus, ShoppingCart } from "lucide-react";
 import { NewTable } from "@/app/types";
 
 interface MenuItem {
@@ -63,7 +63,9 @@ export default function MenuPage() {
   // Load cart from API on component mount with safety checks
   const fetchCart = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart?tableId=${tableId}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/cart?tableId=${tableId}`
+      );
       if (response.ok) {
         const cartData = await response.json();
         console.log("Cart data received:", cartData); // Debug log
@@ -91,7 +93,9 @@ export default function MenuPage() {
 
   const fetchTableData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch table: ${response.statusText}`);
@@ -119,7 +123,9 @@ export default function MenuPage() {
   // Function to fetch restaurant data
   const fetchRestaurantData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`
+      );
       if (!response.ok) {
         throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
       }
@@ -137,7 +143,9 @@ export default function MenuPage() {
   // Function to fetch menu items
   const fetchMenuItems = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/menus`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/menus`
+      );
       if (!response.ok) {
         throw new Error(`Failed to fetch menus: ${response.statusText}`);
       }
@@ -172,22 +180,25 @@ export default function MenuPage() {
         },
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          tableId,
-          action: "add",
-          item: {
-            id: menuItem.id,
-            name: menuItem.name,
-            price: menuItem.price,
-            quantity: 1,
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        }),
-      });
+          body: JSON.stringify({
+            tableId,
+            action: "add",
+            item: {
+              id: menuItem.id,
+              name: menuItem.name,
+              price: menuItem.price,
+              quantity: 1,
+            },
+          }),
+        }
+      );
 
       if (response.ok) {
         const updatedCart = await response.json();
@@ -209,7 +220,9 @@ export default function MenuPage() {
       }
     } catch (error) {
       console.error("Error adding item to cart:", error);
-      alert(`Could not add ${menuItem.name} to cart. Please check your connection.`);
+      alert(
+        `Could not add ${menuItem.name} to cart. Please check your connection.`
+      );
     } finally {
       setAddingToCart(null); // Clear loading state
     }

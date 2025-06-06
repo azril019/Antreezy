@@ -1,16 +1,22 @@
-import {NextRequest, NextResponse} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import ReviewModel from "@/db/models/ReviewModel";
+import errHandler from "@/helpers/errHandler";
+
+type ErrorWithStatus = {
+  status?: number;
+  message: string;
+};
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {orderId, rating, comment, tableId} = body;
+    const { orderId, rating, comment, tableId } = body;
 
     // Validate required fields
     if (!orderId || !rating || !tableId) {
       return NextResponse.json(
-        {error: "Missing required fields"},
-        {status: 400}
+        { error: "Missing required fields" },
+        { status: 400 }
       );
     }
 
@@ -27,18 +33,15 @@ export async function POST(request: NextRequest) {
       message: "Review submitted successfully",
       review,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error submitting review:", error);
-    return NextResponse.json(
-      {error: error.message || "Internal server error"},
-      {status: 500}
-    );
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const {searchParams} = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     const tableId = searchParams.get("tableId");
     const orderId = searchParams.get("orderId");
 
@@ -53,11 +56,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(reviews);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching reviews:", error);
-    return NextResponse.json(
-      {error: error.message || "Internal server error"},
-      {status: 500}
-    );
+    return errHandler(error as ErrorWithStatus);
   }
 }

@@ -15,6 +15,12 @@ import {
   ShoppingCart,
   LucideGlobe,
   AtSign,
+  Clock,
+  ChefHat,
+  CheckCircle,
+  Package,
+  Eye,
+  X,
 } from "lucide-react";
 import { NewTable } from "@/app/types";
 
@@ -81,6 +87,28 @@ interface CartItem {
   quantity: number;
 }
 
+// Add Order interface
+interface Order {
+  _id: string;
+  orderId: string;
+  tableId: string;
+  items: Array<{
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }>;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  customerDetails?: {
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+}
+
 export default function TablePage() {
   const params = useParams();
   const router = useRouter();
@@ -90,14 +118,54 @@ export default function TablePage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]); // Ensure it's initialized as empty array
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [averageRating, setAverageRating] = useState<number>(0);
+
+  // Add order status states
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
+  const [showOrderFloat, setShowOrderFloat] = useState(false);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [hasUserHiddenFloat, setHasUserHiddenFloat] = useState(false); // Add this state
+
+  // Status configuration
+  const statusConfig = {
+    pending: {
+      icon: Clock,
+      color: "bg-yellow-500",
+      textColor: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      label: "Menunggu Pembayaran",
+    },
+    queue: {
+      icon: Package,
+      color: "bg-blue-500",
+      textColor: "text-blue-600",
+      bgColor: "bg-blue-50",
+      label: "Dalam Antrian",
+    },
+    cooking: {
+      icon: ChefHat,
+      color: "bg-orange-500",
+      textColor: "text-orange-600",
+      bgColor: "bg-orange-50",
+      label: "Sedang Dimasak",
+    },
+    served: {
+      icon: CheckCircle,
+      color: "bg-green-500",
+      textColor: "text-green-600",
+      bgColor: "bg-green-50",
+      label: "Siap Disajikan",
+    },
+  };
 
   // Load cart from API on component mount
   const fetchCart = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart?tableId=${tableId}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/cart?tableId=${tableId}`
+      );
       if (response.ok) {
         const cartData = await response.json();
         // Ensure cartData is an array
@@ -120,13 +188,15 @@ export default function TablePage() {
   // Function to fetch restaurant data by ID, with fallback to first restaurant
   const fetchRestaurantData = async () => {
     try {
-      let response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
       }
 
-      const restaurants = await response.json();
+      const restaurants: Restaurant[] = await response.json();
       if (!restaurants || restaurants.length === 0) {
         throw new Error("No restaurants found in database");
       }
@@ -142,7 +212,9 @@ export default function TablePage() {
   // Function to fetch menu items
   const fetchMenuItems = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/menus`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/menus`
+      );
       if (!response.ok) {
         throw new Error(`Failed to fetch menus: ${response.statusText}`);
       }
@@ -155,7 +227,9 @@ export default function TablePage() {
 
   const fetchTableData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch table: ${response.statusText}`);
@@ -176,7 +250,9 @@ export default function TablePage() {
   // Add function to fetch reviews
   const fetchReviews = async () => {
     try {
-      const response = await fetch(`/api/reviews`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews`
+      );
       if (response.ok) {
         const reviewsData = await response.json();
         setReviews(reviewsData);
@@ -197,6 +273,49 @@ export default function TablePage() {
       console.error("Error fetching reviews:", error);
       setReviews([]);
       setAverageRating(0);
+    }
+  };
+
+  // Fetch active orders for this table
+  const fetchActiveOrders = async () => {
+    try {
+      setIsLoadingOrders(true);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders?tableId=${tableId}`
+      );
+
+      if (response.ok) {
+        const ordersData = await response.json();
+        const activeOrdersList = Array.isArray(ordersData)
+          ? ordersData.filter(
+              (order: Order) =>
+                order.status !== "done" &&
+                order.items &&
+                order.items.length > 0
+            )
+          : [];
+
+        setActiveOrders(activeOrdersList);
+
+        // Only auto show float card if:
+        // 1. There are active orders
+        // 2. User hasn't manually hidden the card
+        // 3. Card is not already showing
+        if (activeOrdersList.length > 0 && !hasUserHiddenFloat && !showOrderFloat) {
+          setShowOrderFloat(true);
+        }
+
+        // If no active orders, reset the hidden state
+        if (activeOrdersList.length === 0) {
+          setHasUserHiddenFloat(false);
+          setShowOrderFloat(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching active orders:", error);
+      setActiveOrders([]);
+    } finally {
+      setIsLoadingOrders(false);
     }
   };
 
@@ -262,7 +381,8 @@ export default function TablePage() {
           fetchTableData(),
           fetchRestaurantData(),
           fetchMenuItems(),
-          fetchReviews(), // Add this
+          fetchReviews(),
+          fetchActiveOrders(), // Add this
         ]);
       } catch (err) {
         console.error("Error loading data:", err);
@@ -274,11 +394,32 @@ export default function TablePage() {
 
     if (tableId) {
       loadData();
+
+      // Set up polling for order status updates
+      const interval = setInterval(fetchActiveOrders, 5000); // Poll every 5 seconds
+      return () => clearInterval(interval);
     } else {
       setError("No table ID provided");
       setLoading(false);
     }
   }, [tableId]);
+
+  // Handle view order details
+  const handleViewOrderDetails = () => {
+    router.push(`/tables/${tableId}/orders`);
+  };
+
+  // Handle close float card
+  const handleCloseOrderFloat = () => {
+    setShowOrderFloat(false);
+    setHasUserHiddenFloat(true); // Mark that user has manually hidden the card
+  };
+
+  // Handle show float card (when clicking toggle button)
+  const handleShowOrderFloat = () => {
+    setShowOrderFloat(true);
+    setHasUserHiddenFloat(false); // Reset the hidden state when user manually shows it
+  };
 
   if (loading) {
     return (
@@ -641,7 +782,8 @@ export default function TablePage() {
               {restaurant.contact?.instagram && (
                 <button
                   onClick={() =>
-                    openSocialMedia("instagram", restaurant.contact?.instagram!)
+                    restaurant.contact?.instagram &&
+                    openSocialMedia("instagram", restaurant.contact.instagram)
                   }
                   className="p-2 rounded-full hover:bg-pink-50 transition-colors"
                   title={`Follow us on Instagram: ${restaurant.contact.instagram}`}
@@ -653,7 +795,8 @@ export default function TablePage() {
               {restaurant.contact?.facebook && (
                 <button
                   onClick={() =>
-                    openSocialMedia("facebook", restaurant.contact?.facebook!)
+                    restaurant.contact?.facebook &&
+                    openSocialMedia("facebook", restaurant.contact.facebook)
                   }
                   className="p-2 rounded-full hover:bg-blue-50 transition-colors"
                   title={`Visit our Facebook: ${restaurant.contact.facebook}`}
@@ -665,7 +808,8 @@ export default function TablePage() {
               {restaurant.contact?.whatsapp && (
                 <button
                   onClick={() =>
-                    openSocialMedia("whatsapp", restaurant.contact?.whatsapp!)
+                    restaurant.contact?.whatsapp &&
+                    openSocialMedia("whatsapp", restaurant.contact.whatsapp)
                   }
                   className="p-2 rounded-full hover:bg-green-50 transition-colors"
                   title={`Chat us on WhatsApp: ${restaurant.contact.whatsapp}`}
@@ -677,7 +821,8 @@ export default function TablePage() {
               {restaurant.contact?.twitter && (
                 <button
                   onClick={() =>
-                    openSocialMedia("twitter", restaurant.contact?.twitter!)
+                    restaurant.contact?.twitter &&
+                    openSocialMedia("twitter", restaurant.contact.twitter)
                   }
                   className="p-2 rounded-full hover:bg-gray-50 transition-colors"
                   title={`Follow us on Twitter: ${restaurant.contact.twitter}`}
@@ -689,6 +834,137 @@ export default function TablePage() {
           </div>
         </div>
       </main>
+
+      {/* Floating Order Status Card */}
+      {showOrderFloat && activeOrders.length > 0 && (
+        <div className="fixed bottom-20 left-4 right-4 z-40 max-w-md mx-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-orange-200 overflow-hidden backdrop-blur-sm bg-white/95">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Package className="w-5 h-5 text-white" />
+                  <h3 className="text-white font-semibold">
+                    Status Pesanan ({activeOrders.length})
+                  </h3>
+                </div>
+                <button
+                  onClick={handleCloseOrderFloat}
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 max-h-64 overflow-y-auto">
+              {isLoadingOrders ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 text-gray-600">Memuat...</span>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeOrders.map((order) => {
+                    const status = statusConfig[order.status as keyof typeof statusConfig];
+                    const StatusIcon = status?.icon || Clock;
+
+                    return (
+                      <div
+                        key={order._id}
+                        className="bg-gray-50 rounded-xl p-3 border border-gray-100"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <div className={`p-1.5 rounded-full ${status?.color || 'bg-gray-500'}`}>
+                              <StatusIcon className="w-3 h-3 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">
+                                #{order._id.slice(-6).toUpperCase()}
+                              </p>
+                              <p className={`text-xs ${status?.textColor || 'text-gray-600'}`}>
+                                {status?.label || 'Unknown Status'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-gray-800">
+                              Rp {order.totalAmount.toLocaleString('id-ID')}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {order.items.length} item
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Order Items Preview */}
+                        <div className="mb-2">
+                          <p className="text-xs text-gray-600 mb-1">Items:</p>
+                          <div className="space-y-1">
+                            {order.items.slice(0, 2).map((item, idx) => (
+                              <div key={idx} className="flex justify-between text-xs">
+                                <span className="text-gray-700">
+                                  {item.quantity}x {item.name}
+                                </span>
+                                <span className="text-gray-600">
+                                  Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                            ))}
+                            {order.items.length > 2 && (
+                              <p className="text-xs text-gray-500 italic">
+                                +{order.items.length - 2} item lainnya
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Time info */}
+                        <div className="text-xs text-gray-500">
+                          Dipesan: {new Date(order.createdAt).toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-100 p-3">
+              <button
+                onClick={handleViewOrderDetails}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+              >
+                <Eye className="w-4 h-4" />
+                <span>Lihat Detail Semua Pesanan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Order Status Toggle Button (when card is hidden) */}
+      {!showOrderFloat && activeOrders.length > 0 && (
+        <div className="fixed bottom-20 right-4 z-40">
+          <button
+            onClick={handleShowOrderFloat} // Use the new handler
+            className="bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
+          >
+            <div className="relative">
+              <Package className="w-6 h-6" />
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {activeOrders.length}
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

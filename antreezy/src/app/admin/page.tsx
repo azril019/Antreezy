@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  CheckCircle,
-  ChefHat,
-  Clock,
-  Check,
-  XCircle,
-  RefreshCw,
-} from "lucide-react";
+import { CheckCircle, ChefHat, Clock, Check, RefreshCw } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
 interface OrderItem {
@@ -85,7 +78,6 @@ export default function AdminDashboard() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [completedOrders, setCompletedOrders] = useState<Order[]>([]);
-  const [tables, setTables] = useState<any[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -106,9 +98,17 @@ export default function AdminDashboard() {
       const signal = abortControllerRef.current.signal;
 
       // Fetch orders
-      const ordersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`, { signal });
-      const completedOrdersRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders?status=done`);
-      const tablesRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables`, { signal });
+      const ordersRes = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`,
+        { signal }
+      );
+      const completedOrdersRes = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders?status=done`
+      );
+      const tablesRes = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables`,
+        { signal }
+      );
 
       if (
         !signal.aborted &&
@@ -118,21 +118,16 @@ export default function AdminDashboard() {
       ) {
         const activeOrdersData = await ordersRes.json();
         const completedOrdersData = await completedOrdersRes.json();
-        const tablesData = await tablesRes.json();
 
         setOrders(activeOrdersData);
         setCompletedOrders(completedOrdersData);
-        setTables(
-          Array.isArray(tablesData) ? tablesData : tablesData.data || []
-        );
         setLastUpdated(new Date());
       }
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== "AbortError") {
         console.error("Error fetching data:", err);
         setOrders([]);
         setCompletedOrders([]);
-        setTables([]);
       }
     } finally {
       setLoading(false);
@@ -162,7 +157,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/profile`);
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/profile`
+        );
         if (!res.ok) throw new Error("Unauthorized");
         const data = await res.json();
         setUser({
@@ -170,6 +167,7 @@ export default function AdminDashboard() {
           role: data.user.role,
         });
       } catch (err) {
+        console.error("Error fetching profile:", err);
         window.location.href = "/admin/login";
       }
     };
@@ -212,17 +210,20 @@ export default function AdminDashboard() {
     try {
       console.log("Updating order:", orderId, "to status:", newStatus);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId,
-          status: newStatus,
-          isActive: !["done"].includes(newStatus),
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/orders`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId,
+            status: newStatus,
+            isActive: !["done"].includes(newStatus),
+          }),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -235,7 +236,9 @@ export default function AdminDashboard() {
         let errorData;
         try {
           errorData = JSON.parse(errorText);
-        } catch (e) {
+        } catch (err) {
+          console.log("Failed to parse error response:", err);
+
           errorData = { error: errorText || "Unknown error" };
         }
         console.error("Error updating order:", {

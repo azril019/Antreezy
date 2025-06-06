@@ -1,20 +1,16 @@
 "use client";
 
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import {
   Star,
   Edit,
   Trash2,
   Plus,
   Search,
-  Filter,
   Download,
   MessageSquare,
-  Calendar,
-  User,
-  Table,
 } from "lucide-react";
-import toast, {Toaster} from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 
 interface Review {
   id: string;
@@ -26,17 +22,9 @@ interface Review {
   updatedAt?: string;
 }
 
-interface NewReview {
-  orderId: string;
-  tableId: string;
-  rating: number;
-  comment: string;
-}
-
 export default function ReportsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentReview, setCurrentReview] = useState<Review | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,9 +40,10 @@ export default function ReportsPage() {
 
   const fetchReviews = async () => {
     setIsLoading(true);
-    setError("");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews`
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch reviews");
       }
@@ -62,7 +51,6 @@ export default function ReportsPage() {
       setReviews(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error fetching reviews:", err);
-      setError("Gagal memuat data review");
       toast.error("Gagal memuat data review");
     } finally {
       setIsLoading(false);
@@ -112,12 +100,14 @@ export default function ReportsPage() {
                 toast.dismiss(t.id);
                 confirmDelete(review.id);
               }}
-              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors">
+              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+            >
               Hapus
             </button>
             <button
               onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400 transition-colors">
+              className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400 transition-colors"
+            >
               Batal
             </button>
           </div>
@@ -140,11 +130,12 @@ export default function ReportsPage() {
   const confirmDelete = async (reviewId: string) => {
     const deletePromise = async () => {
       setIsLoading(true);
-      setError("");
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews/${reviewId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/reviews/${reviewId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to delete review");
@@ -229,6 +220,7 @@ export default function ReportsPage() {
           : "Review berhasil ditambahkan"
       );
     } catch (err) {
+      console.error("Error submitting review:", err);
       toast.error(
         currentReview ? "Gagal memperbarui review" : "Gagal menambahkan review"
       );
@@ -268,7 +260,7 @@ export default function ReportsPage() {
       .map((row) => row.map((field) => `"${field}"`).join(","))
       .join("\n");
 
-    const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"});
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -326,13 +318,15 @@ export default function ReportsPage() {
             <button
               onClick={exportToCSV}
               disabled={filteredReviews.length === 0}
-              className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+              className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
               <Download size={20} />
               Export CSV
             </button>
             <button
               onClick={handleAddReview}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
               <Plus size={20} />
               Tambah Review
             </button>
@@ -421,7 +415,8 @@ export default function ReportsPage() {
               <select
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-black"
                 value={ratingFilter}
-                onChange={(e) => setRatingFilter(e.target.value)}>
+                onChange={(e) => setRatingFilter(e.target.value)}
+              >
                 <option value="all">Semua Rating</option>
                 <option value="5">5 Bintang</option>
                 <option value="4">4 Bintang</option>
@@ -499,8 +494,8 @@ export default function ReportsPage() {
                           {renderStarRating(review.rating)}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900">
-                          <div 
-                            className="max-w-xs truncate cursor-pointer hover:text-clip hover:whitespace-normal" 
+                          <div
+                            className="max-w-xs truncate cursor-pointer hover:text-clip hover:whitespace-normal"
                             title={review.comment}
                           >
                             {review.comment || (
@@ -513,17 +508,23 @@ export default function ReportsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex flex-col">
                             <span>
-                              {new Date(review.createdAt).toLocaleDateString("id-ID", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
+                              {new Date(review.createdAt).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                }
+                              )}
                             </span>
                             <span className="text-xs text-gray-400">
-                              {new Date(review.createdAt).toLocaleTimeString("id-ID", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {new Date(review.createdAt).toLocaleTimeString(
+                                "id-ID",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
                             </span>
                           </div>
                         </td>
@@ -558,7 +559,8 @@ export default function ReportsPage() {
             <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">
-                  Menampilkan {filteredReviews.length} dari {reviews.length} review
+                  Menampilkan {filteredReviews.length} dari {reviews.length}{" "}
+                  review
                 </p>
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-1">
@@ -596,7 +598,7 @@ export default function ReportsPage() {
                     type="text"
                     value={formData.orderId}
                     onChange={(e) =>
-                      setFormData({...formData, orderId: e.target.value})
+                      setFormData({ ...formData, orderId: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-black"
                     placeholder="Masukkan Order ID"
@@ -612,7 +614,7 @@ export default function ReportsPage() {
                     type="text"
                     value={formData.tableId}
                     onChange={(e) =>
-                      setFormData({...formData, tableId: e.target.value})
+                      setFormData({ ...formData, tableId: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-black"
                     placeholder="Masukkan Table ID"
@@ -629,8 +631,11 @@ export default function ReportsPage() {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setFormData({...formData, rating: star})}
-                        className="focus:outline-none">
+                        onClick={() =>
+                          setFormData({ ...formData, rating: star })
+                        }
+                        className="focus:outline-none"
+                      >
                         <Star
                           className={`w-8 h-8 ${
                             star <= formData.rating
@@ -653,7 +658,7 @@ export default function ReportsPage() {
                   <textarea
                     value={formData.comment}
                     onChange={(e) =>
-                      setFormData({...formData, comment: e.target.value})
+                      setFormData({ ...formData, comment: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-black"
                     placeholder="Masukkan komentar (opsional)"
@@ -665,13 +670,15 @@ export default function ReportsPage() {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
                     {isLoading
                       ? "Menyimpan..."
                       : currentReview

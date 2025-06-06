@@ -96,9 +96,8 @@ function generateFallbackNutrition(composition: string): NutritionalInfo {
   let carbs = 25.0;
   let fat = 6.0;
   let fiber = 2.0;
-  let sugar = 3.0;
+  const sugar = 3.0;
 
-  // Estimasi berdasarkan bahan yang terdeteksi
   if (lower.includes("nasi") || lower.includes("rice")) {
     calories += 200;
     carbs += 40;
@@ -142,24 +141,4 @@ function generateFallbackNutrition(composition: string): NutritionalInfo {
     fiber: Math.round(fiber * 10) / 10,
     sugar: Math.round(sugar * 10) / 10,
   };
-}
-
-export async function testGeminiModels() {
-  try {
-    const models = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
-
-    for (const modelName of models) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent("Test");
-        return modelName;
-      } catch (error) {
-        console.log(`❌ Model ${modelName} is not available`);
-      }
-    }
-    throw new Error("No available models found");
-  } catch (error) {
-    console.error("Error testing models:", error);
-    return null;
-  }
 }

@@ -3,6 +3,10 @@ import CartModel from "@/db/models/CartModel";
 import OrderModel from "@/db/models/OrderModel";
 import errHandler from "@/helpers/errHandler";
 
+interface ErrorWithStatus extends Error {
+  status?: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -34,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error("Error fetching cart:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
@@ -237,6 +241,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
