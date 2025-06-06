@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { db } from "../config/mongodb";
 
 interface NutritionalInfo {
@@ -36,14 +35,13 @@ export default class CartModel {
     return db.collection("carts");
   }
 
-  static async getCartByTableId(tableId: string): Promise<any> {
+  static async getCartByTableId(tableId: string): Promise<unknown> {
     const cart = await this.collection().findOne({ tableId });
     return cart;
   }
 
-  static async addToCart(tableId: string, item: any): Promise<CartItem[]> {
+  static async addToCart(tableId: string, item: CartItem): Promise<CartItem[]> {
     const cart = await this.collection().findOne({ tableId });
-    let updatedItems = [];
 
     if (!cart) {
       // Create new cart if it doesn't exist
@@ -111,7 +109,7 @@ export default class CartModel {
 
   // Remove updateCartStatus method as it's no longer needed
 
-  static async getActiveCarts(): Promise<any[]> {
+  static async getActiveCarts(): Promise<unknown[]> {
     const carts = await this.collection()
       .find({
         $and: [{ items: { $exists: true } }, { items: { $ne: [] } }],

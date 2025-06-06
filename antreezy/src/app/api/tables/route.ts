@@ -2,6 +2,11 @@ import errHandler from "@/helpers/errHandler";
 import TableModel from "@/db/models/TableModel";
 import { NewTable } from "@/app/types";
 
+type ErrorWithStatus = {
+  status?: number;
+  message?: string;
+};
+
 export async function POST(request: Request) {
   try {
     const body: NewTable = await request.json();
@@ -36,7 +41,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.log("🚀 ~ POST tables ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 
@@ -46,6 +51,6 @@ export async function GET() {
     return Response.json(result, { status: 200 });
   } catch (error) {
     console.log("🚀 ~ GET tables ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

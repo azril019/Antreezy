@@ -1,5 +1,5 @@
-import {db} from "@/db/config/mongodb";
-import {ObjectId} from "mongodb";
+import { db } from "@/db/config/mongodb";
+import { ObjectId } from "mongodb";
 
 export interface Review {
   id: string;
@@ -19,13 +19,13 @@ export interface NewReview {
 
 export default class ReviewModel {
   static collection() {
-    return db.collection<Omit<Review, "id"> & {_id?: ObjectId}>("reviews");
+    return db.collection<Omit<Review, "id"> & { _id?: ObjectId }>("reviews");
   }
 
   static async getAllReviews(): Promise<Review[]> {
     const reviews = await this.collection()
       .find({})
-      .sort({createdAt: -1})
+      .sort({ createdAt: -1 })
       .toArray();
 
     return reviews
@@ -33,7 +33,6 @@ export default class ReviewModel {
         (review): Review => ({
           ...review,
           id: review._id?.toString() || "",
-          _id: undefined,
         })
       )
       .filter((review) => review.id);
@@ -41,8 +40,8 @@ export default class ReviewModel {
 
   static async getReviewsByTableId(tableId: string): Promise<Review[]> {
     const reviews = await this.collection()
-      .find({tableId})
-      .sort({createdAt: -1})
+      .find({ tableId })
+      .sort({ createdAt: -1 })
       .toArray();
 
     return reviews
@@ -50,7 +49,6 @@ export default class ReviewModel {
         (review): Review => ({
           ...review,
           id: review._id?.toString() || "",
-          _id: undefined,
         })
       )
       .filter((review) => review.id);
@@ -58,8 +56,8 @@ export default class ReviewModel {
 
   static async getReviewsByOrderId(orderId: string): Promise<Review[]> {
     const reviews = await this.collection()
-      .find({orderId})
-      .sort({createdAt: -1})
+      .find({ orderId })
+      .sort({ createdAt: -1 })
       .toArray();
 
     return reviews
@@ -67,7 +65,6 @@ export default class ReviewModel {
         (review): Review => ({
           ...review,
           id: review._id?.toString() || "",
-          _id: undefined,
         })
       )
       .filter((review) => review.id);
@@ -98,7 +95,6 @@ export default class ReviewModel {
     return {
       ...createdReview,
       id: createdReview._id?.toString() || "",
-      _id: undefined,
     };
   }
 
@@ -112,9 +108,9 @@ export default class ReviewModel {
     }
 
     const result = await this.collection().findOneAndUpdate(
-      {_id: new ObjectId(id)},
-      {$set: updateData},
-      {returnDocument: "after"}
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: "after" }
     );
 
     if (!result) return null;
@@ -122,7 +118,6 @@ export default class ReviewModel {
     return {
       ...result,
       id: result._id?.toString() || "",
-      _id: undefined,
     };
   }
 
@@ -145,7 +140,6 @@ export default class ReviewModel {
       return {
         ...result,
         id: result._id?.toString() || "",
-        _id: undefined,
       };
     } catch (error) {
       console.error("Error getting review by ID:", error);
@@ -158,8 +152,8 @@ export default class ReviewModel {
       {
         $group: {
           _id: null,
-          averageRating: {$avg: "$rating"},
-          totalReviews: {$sum: 1},
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
         },
       },
     ];
@@ -171,22 +165,22 @@ export default class ReviewModel {
     return Math.round(result[0].averageRating * 10) / 10; // Round to 1 decimal place
   }
 
-  static async getRatingDistribution(): Promise<{[key: number]: number}> {
+  static async getRatingDistribution(): Promise<{ [key: number]: number }> {
     const pipeline = [
       {
         $group: {
           _id: "$rating",
-          count: {$sum: 1},
+          count: { $sum: 1 },
         },
       },
       {
-        $sort: {_id: 1},
+        $sort: { _id: 1 },
       },
     ];
 
     const result = await this.collection().aggregate(pipeline).toArray();
 
-    const distribution: {[key: number]: number} = {
+    const distribution: { [key: number]: number } = {
       1: 0,
       2: 0,
       3: 0,

@@ -2,6 +2,10 @@ import { NextRequest } from "next/server";
 import OrderModel from "@/db/models/OrderModel";
 import errHandler from "@/helpers/errHandler";
 
+interface ErrorWithStatus extends Error {
+  status?: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -28,7 +32,7 @@ export async function GET(request: NextRequest) {
     return Response.json(formattedOrders);
   } catch (error) {
     console.error("Error fetching orders:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
 

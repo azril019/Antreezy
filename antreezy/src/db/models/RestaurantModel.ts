@@ -69,7 +69,7 @@ class RestaurantModel {
     restaurantId: string,
     restaurantData: NewRestaurant
   ) {
-    const { id, ...dataToValidate } = restaurantData;
+    const { ...dataToValidate } = restaurantData;
     NewRestaurantSchema.parse(dataToValidate);
     const existRestaurant = await this.collection().findOne({
       _id: new ObjectId(restaurantId),

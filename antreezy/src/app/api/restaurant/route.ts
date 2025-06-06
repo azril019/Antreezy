@@ -2,6 +2,11 @@ import errHandler from "@/helpers/errHandler";
 import RestaurantModel from "@/db/models/RestaurantModel";
 import { NewRestaurant } from "@/app/types";
 
+type ErrorWithStatus = {
+  status?: number;
+  message: string;
+};
+
 export async function POST(request: Request) {
   try {
     const body: NewRestaurant = await request.json();
@@ -10,10 +15,10 @@ export async function POST(request: Request) {
     return Response.json({ message: result }, { status: 201 });
   } catch (error) {
     console.log("🚀 ~ POST ~ error:", error);
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const restaurant = await RestaurantModel.getAllRestaurants();
     if (!restaurant) {
@@ -24,6 +29,6 @@ export async function GET(request: Request) {
     }
     return Response.json(restaurant);
   } catch (error) {
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }

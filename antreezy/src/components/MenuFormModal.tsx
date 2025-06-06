@@ -27,7 +27,7 @@ interface MenuFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   menuItem: MenuItem | null;
-  onSubmit: (menuData: any) => void;
+  onSubmit: (menuData: unknown) => void;
   isProcessing: boolean;
 }
 
@@ -143,10 +143,13 @@ export default function MenuFormModal({
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/upload`, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to upload image");

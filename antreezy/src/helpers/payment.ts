@@ -31,13 +31,16 @@ export const createPayment = async (
       totalAmount: paymentData.totalAmount,
     });
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/payment`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(paymentData),
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paymentData),
+      }
+    );
 
     console.log("Payment API response status:", response.status);
 
@@ -68,7 +71,7 @@ export const createPayment = async (
   }
 };
 
-export const initiateMidtransPayment = (token: string): Promise<any> => {
+export const initiateMidtransPayment = (token: string): Promise<unknown> => {
   return new Promise((resolve, reject) => {
     console.log(
       "Initiating Midtrans payment with token:",
@@ -79,17 +82,21 @@ export const initiateMidtransPayment = (token: string): Promise<any> => {
     if (typeof window !== "undefined" && window.snap) {
       console.log("Using existing Midtrans Snap");
       window.snap.pay(token, {
-        onSuccess: (result: any) => {
+        onSuccess: (result: unknown) => {
           console.log("Payment success:", result);
           resolve(result);
         },
-        onPending: (result: any) => {
+        onPending: (result: unknown) => {
           console.log("Payment pending:", result);
           resolve(result);
         },
-        onError: (result: any) => {
+        onError: (result: unknown) => {
           console.error("Payment error:", result);
-          reject(new Error(result.message || "Payment failed"));
+          reject(
+            new Error(
+              (result as { message?: string }).message || "Payment failed"
+            )
+          );
         },
         onClose: () => {
           console.log("Payment popup closed");
@@ -103,7 +110,7 @@ export const initiateMidtransPayment = (token: string): Promise<any> => {
     console.log("Loading Midtrans Snap script");
     const script = document.createElement("script");
     script.src =
-      process.env.NODE_ENV === "production"
+      process.env.MIDTRANS_IS_PRODUCTION === "production"
         ? "https://app.midtrans.com/snap/snap.js"
         : "https://app.sandbox.midtrans.com/snap/snap.js";
 
@@ -119,17 +126,21 @@ export const initiateMidtransPayment = (token: string): Promise<any> => {
       console.log("Midtrans script loaded successfully");
       if (window.snap) {
         window.snap.pay(token, {
-          onSuccess: (result: any) => {
+          onSuccess: (result: unknown) => {
             console.log("Payment success:", result);
             resolve(result);
           },
-          onPending: (result: any) => {
+          onPending: (result: unknown) => {
             console.log("Payment pending:", result);
             resolve(result);
           },
-          onError: (result: any) => {
+          onError: (result: unknown) => {
             console.error("Payment error:", result);
-            reject(new Error(result.message || "Payment failed"));
+            reject(
+              new Error(
+                (result as { message?: string }).message || "Payment failed"
+              )
+            );
           },
           onClose: () => {
             console.log("Payment popup closed");
@@ -153,6 +164,16 @@ export const initiateMidtransPayment = (token: string): Promise<any> => {
 // Extend Window interface for TypeScript
 declare global {
   interface Window {
-    snap: any;
+    snap: {
+      pay: (
+        token: string,
+        options: {
+          onSuccess: (result: unknown) => void;
+          onPending: (result: unknown) => void;
+          onError: (result: unknown) => void;
+          onClose: () => void;
+        }
+      ) => void;
+    };
   }
 }

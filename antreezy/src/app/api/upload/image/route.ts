@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         .end(buffer);
     });
 
-    const result = uploadResult as any;
+    const result = uploadResult as { secure_url: string; public_id: string };
 
     return NextResponse.json({
       message: "Image uploaded successfully",

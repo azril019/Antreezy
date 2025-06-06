@@ -64,7 +64,9 @@ export default function CartPage() {
   // Load cart from API on component mount
   const fetchCart = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart?tableId=${tableId}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/cart?tableId=${tableId}`
+      );
       if (response.ok) {
         const cartData = await response.json();
         console.log("Cart data received:", cartData);
@@ -88,7 +90,9 @@ export default function CartPage() {
 
   const fetchTableData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/tables/${tableId}`
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch table: ${response.statusText}`);
@@ -113,7 +117,9 @@ export default function CartPage() {
 
   const fetchRestaurantData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurant`
+      );
       if (!response.ok) {
         throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
       }
@@ -144,18 +150,21 @@ export default function CartPage() {
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          tableId,
-          action: "updateQuantity",
-          itemId,
-          quantity: newQuantity,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tableId,
+            action: "updateQuantity",
+            itemId,
+            quantity: newQuantity,
+          }),
+        }
+      );
 
       if (response.ok) {
         const updatedCart = await response.json();
@@ -175,17 +184,20 @@ export default function CartPage() {
 
   const removeFromCart = async (itemId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          tableId,
-          action: "remove",
-          itemId,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tableId,
+            action: "remove",
+            itemId,
+          }),
+        }
+      );
 
       if (response.ok) {
         const updatedCart = await response.json();
@@ -205,16 +217,19 @@ export default function CartPage() {
 
   const clearCart = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          tableId,
-          action: "clear",
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/cart`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tableId,
+            action: "clear",
+          }),
+        }
+      );
 
       if (response.ok) {
         setCart([]);
@@ -275,8 +290,6 @@ export default function CartPage() {
   // Handle checkout with Midtrans
   const handleCheckout = async () => {
     if (cart.length === 0) return;
-
-    // Show customer details form first
     setShowCustomerForm(true);
   };
 
@@ -317,6 +330,8 @@ export default function CartPage() {
       await clearCart();
 
       // Initiate Midtrans payment
+      //Set time out
+
       await initiateMidtransPayment(paymentResult.token);
 
       // Payment success will be handled by Midtrans callbacks

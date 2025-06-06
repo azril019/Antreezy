@@ -4,6 +4,11 @@ import { generateToken } from "@/helpers/jwt";
 import UserModel from "@/db/models/UserModel";
 import { cookies } from "next/headers";
 
+type ErrorWithStatus = {
+  status?: number;
+  message: string;
+};
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -36,6 +41,6 @@ export async function POST(request: Request) {
       accessToken: token,
     });
   } catch (error) {
-    return errHandler(error);
+    return errHandler(error as ErrorWithStatus);
   }
 }
